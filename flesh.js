@@ -9,11 +9,12 @@
 
     var w = flesh.width,
         h = flesh.height,
-        imgdata = fleshcontext.createImageData(w, h),
-        buffer32 = new window.Uint32Array(imgdata.data.buffer),
-        len = buffer32.length,
         i = 0;
 
+    // Bog-standard noise
+    var imgdata = fleshcontext.createImageData(w, h),
+        buffer32 = new window.Uint32Array(imgdata.data.buffer),
+        len = buffer32.length;
     var noise = document.createElement("canvas");
     var noisecontext = noise.getContext("2d");
     noise.width = w;
@@ -25,13 +26,8 @@
         }
     }
 
-
     // Veins
     // kudos to https://lisimba.org/lichtenberg/lichtenberg-live.html
-    var veincanvas = document.createElement("canvas");
-    veincanvas.width = w;
-    veincanvas.height = h;
-    var veincanvascontext = veincanvas.getContext("2d");
     function Venule () {
         this.x = 0;
         this.y = 0;
@@ -45,6 +41,10 @@
         this.seen = false;
     }
     function VeinSet () {
+        var veincanvas = document.createElement("canvas");
+        veincanvas.width = w;
+        veincanvas.height = h;
+        var veincanvascontext = veincanvas.getContext("2d");
         this.context = veincanvascontext;
         this.venules = [];
 
@@ -92,26 +92,26 @@
             v.forEach(function (ven, iy) {
                 if (ix > 0) {
                     if (iy > 0) {
-                        ven.probableLinks.push(venules[ix - 1][iy - 1]);   // NW
+                        ven.probableLinks.push(venules[ix - 1][iy - 1]);
                     }
-                    ven.probableLinks.push(venules[ix - 1][iy]);   // W
+                    ven.probableLinks.push(venules[ix - 1][iy]);
                     if (iy < lastY) {
-                        ven.probableLinks.push(venules[ix - 1][iy + 1]);   // SW
+                        ven.probableLinks.push(venules[ix - 1][iy + 1]);
                     }
                 }
                 if (iy > 0) {
-                    ven.probableLinks.push(venules[ix][iy - 1]);   // N
+                    ven.probableLinks.push(venules[ix][iy - 1]);
                 }
                 if (iy < lastY) {
-                    ven.probableLinks.push(venules[ix][iy + 1]);   // S
+                    ven.probableLinks.push(venules[ix][iy + 1]);
                 }
                 if (ix < lastX) {
                     if (iy > 0) {
-                        ven.probableLinks.push(venules[ix + 1][iy - 1]);   // NE
+                        ven.probableLinks.push(venules[ix + 1][iy - 1]);
                     }
-                    ven.probableLinks.push(venules[ix + 1][iy]);   // E
+                    ven.probableLinks.push(venules[ix + 1][iy]);
                     if (iy < lastY) {
-                        ven.probableLinks.push(venules[ix + 1][iy + 1]);   // SE
+                        ven.probableLinks.push(venules[ix + 1][iy + 1]);
                     }
                 }
             });
@@ -123,12 +123,10 @@
                 ven.parentVenules = [];
                 ven.childVenule = null;
 
-                // Make a copy of the potential links list. We destroy the copy bit by bit below.
                 ven.probableLinksRemaining = ven.probableLinks.slice(0);
             });
         });
 
-        // Seen the contact node.
         this.venules[x][y].seen = true;
 
         var activeVenules = [];
@@ -151,9 +149,8 @@
             }
 
             if (madeLink) {
-                // Have a look at this ven again some time later.
                 activeVenules.push(ven);
-            } // If no links were made then all surrounding vens have been seen, so this ven doesn't have to be active anymore. Just forget about it.
+            }
         }
 
     };
@@ -209,6 +206,202 @@
         });
     };
 
+
+    // Perlin/Simplex noise
+    // kudos to http://asserttrue.blogspot.ca/2012/01/procedural-textures-in-html5-canvas.html
+    // and https://github.com/jwagner/simplex-noise.js
+    function SimplexNoise(random) {
+        if (!random) {
+            random = Math.random;
+        }
+        var perlincanvas = document.createElement("canvas");
+        perlincanvas.width = w;
+        perlincanvas.height = h;
+        this.context = perlincanvas.getContext("2d");
+
+        this.p = new window.Uint8Array(256);
+        this.perm = new window.Uint8Array(512);
+        this.permMod12 = new window.Uint8Array(512);
+        for (i = 0; i < 256; i++) {
+            this.p[i] = random() * 256;
+        }
+        for (i = 0; i < 512; i++) {
+            this.perm[i] = this.p[i & 255];
+            this.permMod12[i] = this.perm[i] % 12;
+        }
+
+        this.F3 = 1.0 / 3.0;
+        this.G3 = 1.0 / 6.0;
+    }
+    SimplexNoise.prototype = {
+        grad3: new window.Float32Array([1, 1, 0,
+                                - 1, 1, 0,
+                                1, - 1, 0,
+
+                                - 1, - 1, 0,
+                                1, 0, 1,
+                                - 1, 0, 1,
+
+                                1, 0, - 1,
+                                - 1, 0, - 1,
+                                0, 1, 1,
+
+                                0, - 1, 1,
+                                0, 1, - 1,
+                                0, - 1, - 1]),
+        grad4: new window.Float32Array([0, 1, 1, 1, 0, 1, 1, - 1, 0, 1, - 1, 1, 0, 1, - 1, - 1,
+                                0, - 1, 1, 1, 0, - 1, 1, - 1, 0, - 1, - 1, 1, 0, - 1, - 1, - 1,
+                                1, 0, 1, 1, 1, 0, 1, - 1, 1, 0, - 1, 1, 1, 0, - 1, - 1,
+                                - 1, 0, 1, 1, - 1, 0, 1, - 1, - 1, 0, - 1, 1, - 1, 0, - 1, - 1,
+                                1, 1, 0, 1, 1, 1, 0, - 1, 1, - 1, 0, 1, 1, - 1, 0, - 1,
+                                - 1, 1, 0, 1, - 1, 1, 0, - 1, - 1, - 1, 0, 1, - 1, - 1, 0, - 1,
+                                1, 1, 1, 0, 1, 1, - 1, 0, 1, - 1, 1, 0, 1, - 1, - 1, 0,
+                                - 1, 1, 1, 0, - 1, 1, - 1, 0, - 1, - 1, 1, 0, - 1, - 1, - 1, 0]),
+        noise: function (xin, yin, zin) {
+            var permMod12 = this.permMod12,
+                perm = this.perm,
+                grad3 = this.grad3;
+            var n0, n1, n2, n3;
+            var s = (xin + yin + zin) * this.F3;
+            var ii = Math.floor(xin + s);
+            var j = Math.floor(yin + s);
+            var k = Math.floor(zin + s);
+            var t = (ii + j + k) * this.G3;
+            var X0 = ii - t;
+            var Y0 = j - t;
+            var Z0 = k - t;
+            var x0 = xin - X0;
+            var y0 = yin - Y0;
+            var z0 = zin - Z0;
+            var i1, j1, k1;
+            var i2, j2, k2;
+            if (x0 >= y0) {
+                if (y0 >= z0) {
+                    i1 = 1;
+                    j1 = 0;
+                    k1 = 0;
+                    i2 = 1;
+                    j2 = 1;
+                    k2 = 0;
+                } else if (x0 >= z0) {
+                    i1 = 1;
+                    j1 = 0;
+                    k1 = 0;
+                    i2 = 1;
+                    j2 = 0;
+                    k2 = 1;
+                } else {
+                    i1 = 0;
+                    j1 = 0;
+                    k1 = 1;
+                    i2 = 1;
+                    j2 = 0;
+                    k2 = 1;
+                }
+            } else {
+                if (y0 < z0) {
+                    i1 = 0;
+                    j1 = 0;
+                    k1 = 1;
+                    i2 = 0;
+                    j2 = 1;
+                    k2 = 1;
+                } else if (x0 < z0) {
+                    i1 = 0;
+                    j1 = 1;
+                    k1 = 0;
+                    i2 = 0;
+                    j2 = 1;
+                    k2 = 1;
+                } else {
+                    i1 = 0;
+                    j1 = 1;
+                    k1 = 0;
+                    i2 = 1;
+                    j2 = 1;
+                    k2 = 0;
+                }
+            }
+            var x1 = x0 - i1 + this.G3;
+            var y1 = y0 - j1 + this.G3;
+            var z1 = z0 - k1 + this.G3;
+            var x2 = x0 - i2 + 2.0 * this.G3;
+            var y2 = y0 - j2 + 2.0 * this.G3;
+            var z2 = z0 - k2 + 2.0 * this.G3;
+            var x3 = x0 - 1.0 + 3.0 * this.G3;
+            var y3 = y0 - 1.0 + 3.0 * this.G3;
+            var z3 = z0 - 1.0 + 3.0 * this.G3;
+            var ii2 = ii & 255;
+            var jj = j & 255;
+            var kk = k & 255;
+            var t0 = 0.6 - x0 * x0 - y0 * y0 - z0 * z0;
+            if (t0 < 0) {
+                n0 = 0.0;
+            } else {
+                var gi0 = permMod12[ii2 + perm[jj + perm[kk]]] * 3;
+                t0 *= t0;
+                n0 = t0 * t0 * (grad3[gi0] * x0 + grad3[gi0 + 1] * y0 + grad3[gi0 + 2] * z0);
+            }
+            var t1 = 0.6 - x1 * x1 - y1 * y1 - z1 * z1;
+            if (t1 < 0) {
+                n1 = 0.0;
+            } else {
+                var gi1 = permMod12[ii2 + i1 + perm[jj + j1 + perm[kk + k1]]] * 3;
+                t1 *= t1;
+                n1 = t1 * t1 * (grad3[gi1] * x1 + grad3[gi1 + 1] * y1 + grad3[gi1 + 2] * z1);
+            }
+            var t2 = 0.6 - x2 * x2 - y2 * y2 - z2 * z2;
+            if (t2 < 0) {
+                n2 = 0.0;
+            } else {
+                var gi2 = permMod12[ii2 + i2 + perm[jj + j2 + perm[kk + k2]]] * 3;
+                t2 *= t2;
+                n2 = t2 * t2 * (grad3[gi2] * x2 + grad3[gi2 + 1] * y2 + grad3[gi2 + 2] * z2);
+            }
+            var t3 = 0.6 - x3 * x3 - y3 * y3 - z3 * z3;
+            if (t3 < 0) {
+                n3 = 0.0;
+            } else {
+                var gi3 = permMod12[ii2 + 1 + perm[jj + 1 + perm[kk + 1]]] * 3;
+                t3 *= t3;
+                n3 = t3 * t3 * (grad3[gi3] * x3 + grad3[gi3 + 1] * y3 + grad3[gi3 + 2] * z3);
+            }
+            return 32.0 * (n0 + n1 + n2 + n3);
+        }
+    };
+    SimplexNoise.prototype.drawViaCallback = function (callback) {
+        var canvasData = this.context.getImageData(0, 0, w, h);
+        var x, y, pixel;
+
+        var buf = new window.ArrayBuffer(canvasData.data.length),
+            buf8 = new window.Uint8ClampedArray(buf),
+            data = new window.Uint32Array(buf);
+
+        data[1] = 0x0a0b0c0d;
+        var isLittleEndian = true;
+        if (buf[4] === 0x0a && buf[5] === 0x0b && buf[6] === 0x0c && buf[7] === 0x0d) {
+            isLittleEndian = false;
+        }
+        for (y = 0; y < h; y++) {
+            for (x = 0; x < w; x++) {
+                pixel = callback({r: 255, g: 255, b: 255, x: x, y: y});
+                if (isLittleEndian) {
+                    data[y * w + x] = (255 << 24) | (pixel.r << 16) | (pixel.g << 8) | pixel.b;
+                } else {
+                    data[y * w + x] = (pixel.r << 24) | (pixel.g << 16) | (pixel.b << 8) | 255;
+                }
+            }
+        }
+        canvasData.data.set(buf8);
+        this.context.putImageData(canvasData, 0, 0);
+    };
+    SimplexNoise.prototype.render = function (noisefn) {
+        this.context.fillStyle = "#fff";
+        this.context.fillRect(0, 0, w, h);
+        this.drawViaCallback(noisefn);
+    };
+    var SNoise = new SimplexNoise();
+
     function renderFlesh (fleshbase) {
         document.querySelector("html").style.background = fleshbase;
 
@@ -220,8 +413,8 @@
 
         // Draw noise
         fleshcontext.globalCompositeOperation = "overlay";
-        fleshcontext.globalAlpha = 0.2;
-        fleshcontext.shadowColor = "rgba(255, 255, 255, 0.5)";
+        fleshcontext.globalAlpha = 0.15;
+        fleshcontext.shadowColor = "rgba(255, 255, 255, 0.4)";
         fleshcontext.shadowBlur = 0.001;
         fleshcontext.shadowOffsetX = 1.0;
         fleshcontext.shadowOffsetY = 1.0;
@@ -234,7 +427,25 @@
         fleshcontext.shadowOffsetY =null;
         fleshcontext.globalCompositeOperation = "source-over";
 
-        // Draw crackle
+        // Draw cracks
+
+        // Draw marbling
+        SNoise.render(function (data) {
+            data.x /= w;
+            data.y /= h;
+            data.s = 20;
+            data.no = SNoise.noise(data.s * data.x, (h / w * data.s) * data.y, 1) * 0.1 + 0.3;
+            data.r = data.g = data.b = 255 * data.no;
+
+            return data;
+        });
+        fleshcontext.globalAlpha = 0.15;
+        fleshcontext.globalCompositeOperation = "soft-light";
+        fleshcontext.drawImage(SNoise.context.canvas, 0, 0);
+        fleshcontext.globalAlpha = 1.0;
+        fleshcontext.globalCompositeOperation = "source-over";
+
+        // Draw leather-like creases
 
         // Draw veins
         var veins = new VeinSet();
@@ -248,6 +459,8 @@
     }
 
     renderFlesh("#eebb99");
+
+    // To 3D-ify it? http://jsfiddle.net/loktar/4qAxZ/
 
     document.getElementById("menu").addEventListener("click", function (e) {
         var t = e.target || e.srcElement;
