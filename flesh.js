@@ -402,6 +402,26 @@
     };
     var SNoise = new SimplexNoise();
 
+    // Voronoi
+    // http://somethinghitme.com/projects/cell/   ... SQRT(D2 - D1)
+    // https://en.wikipedia.org/wiki/Fortune%27s_algorithm
+    // https://en.wikipedia.org/wiki/Delaunay_triangulation + http://www.cise.ufl.edu/~ungor/delaunay/delaunay/node5.html
+    // http://paulbourke.net/papers/triangulate/
+    function CellularGrouping () {
+        var cellcanvas = document.createElement("canvas");
+        cellcanvas.width = w;
+        cellcanvas.height = h;
+        this.context = cellcanvas.getContext("2d");
+    }
+    CellularGrouping.prototype.render = function () {
+        console.log("render voronoi");
+    };
+    var Voronoi = new CellularGrouping();
+
+
+
+
+
     function renderFlesh (fleshbase) {
         document.querySelector("html").style.background = fleshbase;
 
@@ -446,6 +466,7 @@
         fleshcontext.globalCompositeOperation = "source-over";
 
         // Draw leather-like creases
+        Voronoi.render();
 
         // Draw veins
         var veins = new VeinSet();
