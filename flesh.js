@@ -527,7 +527,7 @@
         // Draw leather-like creases
         //// draw once for lighting
         fleshcontext.globalCompositeOperation = "overlay";
-        fleshcontext.globalAlpha = 0.4;
+        fleshcontext.globalAlpha = 0.35;
         fleshcontext.shadowColor = "rgba(255, 255, 255, 0.7)";
         fleshcontext.shadowBlur = 1.0;
         fleshcontext.shadowOffsetX = 0.0;
@@ -541,9 +541,17 @@
         fleshcontext.globalCompositeOperation = "source-over";
         //// draw again for lines
         fleshcontext.globalAlpha = 0.03;
+        fleshcontext.shadowColor = "rgba(0, 0, 0, 0.7)";
+        fleshcontext.shadowBlur = 0.001;
+        fleshcontext.shadowOffsetX = 0.0;
+        fleshcontext.shadowOffsetY = -3.0;
         fleshcontext.globalCompositeOperation = "multiply";
         fleshcontext.drawImage(Voronoi.context.canvas, 0, 0);
         fleshcontext.globalAlpha = 1.0;
+        fleshcontext.shadowColor = null;
+        fleshcontext.shadowBlur = null;
+        fleshcontext.shadowOffsetX =null;
+        fleshcontext.shadowOffsetY =null;
         fleshcontext.globalCompositeOperation = "source-over";
         //// redraw fleshbase, lighter
         fleshcontext.globalAlpha = 0.7;
