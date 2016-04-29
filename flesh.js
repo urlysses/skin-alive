@@ -1,6 +1,8 @@
 /*jslint browser: true*/
 (function () {
     "use strict";
+    var PI = Math.PI;
+
     var flesh = document.getElementById("flesh");
     flesh.width = window.innerWidth;
     flesh.height = window.innerHeight;
@@ -25,6 +27,7 @@
             buffer32[i + 1] = 0xff000000;
         }
     }
+    noisecontext.putImageData(imgdata, 0, 0);
 
     // Veins
     // kudos to https://lisimba.org/lichtenberg/lichtenberg-live.html
@@ -403,21 +406,166 @@
     var SNoise = new SimplexNoise();
 
     // Voronoi
-    // http://somethinghitme.com/projects/cell/   ... SQRT(D2 - D1)
-    // https://en.wikipedia.org/wiki/Fortune%27s_algorithm
-    // https://en.wikipedia.org/wiki/Delaunay_triangulation + http://www.cise.ufl.edu/~ungor/delaunay/delaunay/node5.html
-    // http://paulbourke.net/papers/triangulate/
     function CellularGrouping () {
         var cellcanvas = document.createElement("canvas");
         cellcanvas.width = w;
         cellcanvas.height = h;
         this.context = cellcanvas.getContext("2d");
-    }
-    CellularGrouping.prototype.render = function () {
-        console.log("render voronoi");
-    };
-    var Voronoi = new CellularGrouping();
+        this.context.fillStyle = "red";
 
+        var verts = [];
+        var p;
+        function isTooClose (pt) {
+            var ii;
+            var vlen = verts.length;
+            var pr, xdiff, ydiff;
+            for (ii = 0; ii < vlen; ii++) {
+                pr = verts[ii];
+                xdiff = pt.x - pr.x;
+                ydiff = pr.y - pt.y;
+                if (Math.sqrt((xdiff * xdiff) + (ydiff * ydiff)) <= 25) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+        for (i = 0; i < 1000; i++) {
+            p = {
+                x: Math.round(Math.random() * w),
+                y: Math.round(Math.random() * h)
+            };
+
+            if (isTooClose(p) === false) {
+                this.context.beginPath();
+                this.context.arc(p.x, p.y, 3, 0, 2 * PI);
+                this.context.closePath();
+                this.context.fill();
+
+                verts.push(p);
+            }
+        }
+        this.verts = verts;
+    }
+    // CellularGrouping.prototype.renderCells = function (verts) {
+    //     // https://github.com/philogb/blog/blob/gh-pages/assets/voronoijs/voronoi.js
+    // };
+    CellularGrouping.prototype.renderCells = function () {
+        // kudos to http://somethinghitme.com/projects/cell/ ... SQRT(D2 - D1)
+        var verts = this.verts,
+            imageData = this.context.createImageData(w, h),
+            pSize = 2,
+            thing = 255 / 4,
+            pLen = verts.length,
+            points = [];
+
+        // Check distance with all other points
+        // TODO: big refactor on this loop, if possible. Way too slow!
+        var x, y, pix, piy, p, c, dist, dist2, firstPoint, curMinDist, curMinDist2;
+        for(x = 0; x < w; x += pSize) {
+            for(y = 0; y < h; y += pSize) {
+                p = 0;
+                dist = 0;
+                dist2 = 0;
+                firstPoint = 0;
+                curMinDist = w * h;
+
+                for(p=0; p < pLen; p++){
+                    dist = Math.sqrt((verts[p].x - x) *(verts[p].x - x) + (verts[p].y - y) * (verts[p].y - y));
+
+                    if(dist < curMinDist){
+                        firstPoint = p;
+                        curMinDist = dist;
+                    }
+                }
+
+
+                curMinDist2 = w * h;
+
+                for(p=0; p < pLen; p++){
+                    if(p !== firstPoint){
+                        dist2 = Math.sqrt((verts[p].x - x) *(verts[p].x - x) + (verts[p].y - y) * (verts[p].y - y));
+
+                        if(dist2 < curMinDist2){
+                            curMinDist2 = dist2;
+                        }
+                    }
+                }
+                points[y * w + x] = curMinDist2 - curMinDist;
+            }
+        }
+
+        // Draw points
+        for(x = 0; x < w; x += pSize){
+            for(y = 0; y < h; y += pSize){
+                for(pix = 0; pix < pSize; pix++){
+                    for(piy = 0; piy < pSize; piy++){
+                        i = ((x + pix) + (y + piy) * imageData.width) * 4;
+                        c = parseInt(points[y * w + x] * thing, 10);
+                        imageData.data[i] = c;
+                        imageData.data[i+1] = c;
+                        imageData.data[i+2] = c;
+                        imageData.data[i+3] = 255 * (1 - c / 255);
+
+                    }
+                }
+            }
+        }
+
+        this.context.putImageData(imageData, 0, 0);
+
+    };
+    /*
+    CellularGrouping.prototype.renderCells = function (verts) {
+        // NOTE: verts elements need r, g, b, attributes (255 random)
+
+        // kudos to the pyton implementation on rosetta code
+        // but this is a colour-only method and it's sooooo slow.
+        // Not Fortune's algo?
+        var canvasData = this.context.getImageData(0, 0, w, h);
+        var vertslen = verts.length;
+        var x, y, dmin, j, ii, d, v;
+
+        var buf = new window.ArrayBuffer(canvasData.data.length),
+            buf8 = new window.Uint8ClampedArray(buf),
+            data = new window.Uint32Array(buf);
+
+        function hypot (x, y) {
+            return Math.sqrt(x * x + y * y);
+        }
+
+        var mh = hypot(w, h);
+
+        data[1] = 0x0a0b0c0d;
+        var isLittleEndian = true;
+        if (buf[4] === 0x0a && buf[5] === 0x0b && buf[6] === 0x0c && buf[7] === 0x0d) {
+            isLittleEndian = false;
+        }
+        for (x = 0; x < w; x += 1) {
+            for (y = 0; y < h; y += 1) {
+                dmin = mh;
+                j = 0;
+                for (ii = 0; ii < vertslen; ii++) {
+                    d = hypot(verts[ii].x - x, verts[ii].y - y);
+                    if (d < dmin) {
+                        dmin = d;
+                        j = ii;
+                    }
+                }
+                v = verts[j];
+                if (isLittleEndian) {
+                    data[y * w + x] = (255 << 24) | (v.r << 16) | (v.g << 8) | v.b;
+                } else {
+                    data[y * w + x] = (v.r << 24) | (v.g << 16) | (v.b << 8) | 255;
+                }
+            }
+        }
+        canvasData.data.set(buf8);
+        this.context.putImageData(canvasData, 0, 0);
+    };
+    */
+    var Voronoi = new CellularGrouping();
+    Voronoi.renderCells();
 
 
 
@@ -431,14 +579,40 @@
         fleshcontext.fillStyle = fleshbase;
         fleshcontext.fillRect(0, 0, w, h);
 
+        // Draw leather-like creases
+        //// draw once for lighting
+        fleshcontext.globalCompositeOperation = "overlay";
+        fleshcontext.globalAlpha = 0.4;
+        fleshcontext.shadowColor = "rgba(255, 255, 255, 0.7)";
+        fleshcontext.shadowBlur = 1.0;
+        fleshcontext.shadowOffsetX = 0.0;
+        fleshcontext.shadowOffsetY = 2.0;
+        fleshcontext.drawImage(Voronoi.context.canvas, 0, 0);
+        fleshcontext.globalAlpha = 1.0;
+        fleshcontext.shadowColor = null;
+        fleshcontext.shadowBlur = null;
+        fleshcontext.shadowOffsetX =null;
+        fleshcontext.shadowOffsetY =null;
+        fleshcontext.globalCompositeOperation = "source-over";
+        //// draw again for lines
+        fleshcontext.globalAlpha = 0.03;
+        fleshcontext.globalCompositeOperation = "multiply";
+        fleshcontext.drawImage(Voronoi.context.canvas, 0, 0);
+        fleshcontext.globalAlpha = 1.0;
+        fleshcontext.globalCompositeOperation = "source-over";
+        //// redraw fleshbase, lighter
+        fleshcontext.globalAlpha = 0.7;
+        fleshcontext.fillStyle = fleshbase;
+        fleshcontext.fillRect(0, 0, w, h);
+        fleshcontext.globalAlpha = 1.0;
+
         // Draw noise
         fleshcontext.globalCompositeOperation = "overlay";
-        fleshcontext.globalAlpha = 0.15;
+        fleshcontext.globalAlpha = 0.1;
         fleshcontext.shadowColor = "rgba(255, 255, 255, 0.4)";
         fleshcontext.shadowBlur = 0.001;
         fleshcontext.shadowOffsetX = 1.0;
         fleshcontext.shadowOffsetY = 1.0;
-        noisecontext.putImageData(imgdata, 0, 0);
         fleshcontext.drawImage(noise, 0, 0);
         fleshcontext.globalAlpha = 1.0;
         fleshcontext.shadowColor = null;
@@ -446,8 +620,6 @@
         fleshcontext.shadowOffsetX =null;
         fleshcontext.shadowOffsetY =null;
         fleshcontext.globalCompositeOperation = "source-over";
-
-        // Draw cracks
 
         // Draw marbling
         SNoise.render(function (data) {
@@ -465,8 +637,6 @@
         fleshcontext.globalAlpha = 1.0;
         fleshcontext.globalCompositeOperation = "source-over";
 
-        // Draw leather-like creases
-        Voronoi.render();
 
         // Draw veins
         var veins = new VeinSet();
@@ -477,6 +647,7 @@
         fleshcontext.globalCompositeOperation = "source-over";
 
         // Draw moles / sun spots
+        // TODO: ^^^^
     }
 
     renderFlesh("#eebb99");
