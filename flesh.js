@@ -411,7 +411,6 @@
         cellcanvas.width = w;
         cellcanvas.height = h;
         this.context = cellcanvas.getContext("2d");
-        this.context.fillStyle = "red";
 
         var verts = [];
         var p;
@@ -437,11 +436,6 @@
             };
 
             if (isTooClose(p) === false) {
-                this.context.beginPath();
-                this.context.arc(p.x, p.y, 3, 0, 2 * PI);
-                this.context.closePath();
-                this.context.fill();
-
                 verts.push(p);
             }
         }
@@ -515,55 +509,6 @@
         this.context.putImageData(imageData, 0, 0);
 
     };
-    /*
-    CellularGrouping.prototype.renderCells = function (verts) {
-        // NOTE: verts elements need r, g, b, attributes (255 random)
-
-        // kudos to the pyton implementation on rosetta code
-        // but this is a colour-only method and it's sooooo slow.
-        // Not Fortune's algo?
-        var canvasData = this.context.getImageData(0, 0, w, h);
-        var vertslen = verts.length;
-        var x, y, dmin, j, ii, d, v;
-
-        var buf = new window.ArrayBuffer(canvasData.data.length),
-            buf8 = new window.Uint8ClampedArray(buf),
-            data = new window.Uint32Array(buf);
-
-        function hypot (x, y) {
-            return Math.sqrt(x * x + y * y);
-        }
-
-        var mh = hypot(w, h);
-
-        data[1] = 0x0a0b0c0d;
-        var isLittleEndian = true;
-        if (buf[4] === 0x0a && buf[5] === 0x0b && buf[6] === 0x0c && buf[7] === 0x0d) {
-            isLittleEndian = false;
-        }
-        for (x = 0; x < w; x += 1) {
-            for (y = 0; y < h; y += 1) {
-                dmin = mh;
-                j = 0;
-                for (ii = 0; ii < vertslen; ii++) {
-                    d = hypot(verts[ii].x - x, verts[ii].y - y);
-                    if (d < dmin) {
-                        dmin = d;
-                        j = ii;
-                    }
-                }
-                v = verts[j];
-                if (isLittleEndian) {
-                    data[y * w + x] = (255 << 24) | (v.r << 16) | (v.g << 8) | v.b;
-                } else {
-                    data[y * w + x] = (v.r << 24) | (v.g << 16) | (v.b << 8) | 255;
-                }
-            }
-        }
-        canvasData.data.set(buf8);
-        this.context.putImageData(canvasData, 0, 0);
-    };
-    */
     var Voronoi = new CellularGrouping();
     Voronoi.renderCells();
 
