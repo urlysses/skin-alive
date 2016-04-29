@@ -422,7 +422,7 @@
                 pr = verts[ii];
                 xdiff = pt.x - pr.x;
                 ydiff = pr.y - pt.y;
-                if (Math.sqrt((xdiff * xdiff) + (ydiff * ydiff)) <= 25) {
+                if (Math.sqrt((xdiff * xdiff) + (ydiff * ydiff)) <= 16) {
                     return true;
                 }
             }
@@ -449,7 +449,7 @@
         var verts = this.verts,
             imageData = this.context.createImageData(w, h),
             pSize = 2,
-            thing = 255 / 4,
+            thing = 255 / 6,
             pLen = verts.length,
             points = [];
 
@@ -509,6 +509,49 @@
         this.context.putImageData(imageData, 0, 0);
 
     };
+    CellularGrouping.prototype.renderInQuadrants = function (context) {
+        var q = 0,
+            hw = w / 2,
+            hh = h / 2,
+            ow = 0,
+            oh = 0;
+        for (q = 0; q < 4; q++) {
+            //// draw once for lighting
+            context.globalCompositeOperation = "overlay";
+            context.globalAlpha = 0.35;
+            context.shadowColor = "rgba(255, 255, 255, 0.5)";
+            context.shadowBlur = 1.0;
+            context.shadowOffsetX = 0.0;
+            context.shadowOffsetY = 2.0;
+            context.drawImage(this.context.canvas, hw * ow, hh * oh, hw, hh);
+
+            //// draw again for lines
+            context.globalAlpha = 0.03;
+            context.shadowColor = "rgba(0, 0, 0, 0.7)";
+            context.shadowBlur = 0.001;
+            context.shadowOffsetX = 0.0;
+            context.shadowOffsetY = -3.0;
+            context.globalCompositeOperation = "multiply";
+            context.drawImage(this.context.canvas, hw * ow, hh * oh, hw, hh);
+            if (q === 0 || q === 2) {
+                ow = 1;
+            } else {
+                ow = 0;
+            }
+            if (q === 0 || q === 3) {
+                oh = 0;
+            } else {
+                oh = 1;
+            }
+        }
+
+        context.globalAlpha = 1.0;
+        context.shadowColor = null;
+        context.shadowBlur = null;
+        context.shadowOffsetX = null;
+        context.shadowOffsetY = null;
+        context.globalCompositeOperation = "source-over";
+    };
     var Voronoi = new CellularGrouping();
     Voronoi.renderCells();
 
@@ -525,36 +568,9 @@
         fleshcontext.fillRect(0, 0, w, h);
 
         // Draw leather-like creases
-        //// draw once for lighting
-        fleshcontext.globalCompositeOperation = "overlay";
-        fleshcontext.globalAlpha = 0.35;
-        fleshcontext.shadowColor = "rgba(255, 255, 255, 0.7)";
-        fleshcontext.shadowBlur = 1.0;
-        fleshcontext.shadowOffsetX = 0.0;
-        fleshcontext.shadowOffsetY = 2.0;
-        fleshcontext.drawImage(Voronoi.context.canvas, 0, 0);
-        fleshcontext.globalAlpha = 1.0;
-        fleshcontext.shadowColor = null;
-        fleshcontext.shadowBlur = null;
-        fleshcontext.shadowOffsetX =null;
-        fleshcontext.shadowOffsetY =null;
-        fleshcontext.globalCompositeOperation = "source-over";
-        //// draw again for lines
-        fleshcontext.globalAlpha = 0.03;
-        fleshcontext.shadowColor = "rgba(0, 0, 0, 0.7)";
-        fleshcontext.shadowBlur = 0.001;
-        fleshcontext.shadowOffsetX = 0.0;
-        fleshcontext.shadowOffsetY = -3.0;
-        fleshcontext.globalCompositeOperation = "multiply";
-        fleshcontext.drawImage(Voronoi.context.canvas, 0, 0);
-        fleshcontext.globalAlpha = 1.0;
-        fleshcontext.shadowColor = null;
-        fleshcontext.shadowBlur = null;
-        fleshcontext.shadowOffsetX =null;
-        fleshcontext.shadowOffsetY =null;
-        fleshcontext.globalCompositeOperation = "source-over";
+        Voronoi.renderInQuadrants(fleshcontext);
         //// redraw fleshbase, lighter
-        fleshcontext.globalAlpha = 0.7;
+        fleshcontext.globalAlpha = 0.6;
         fleshcontext.fillStyle = fleshbase;
         fleshcontext.fillRect(0, 0, w, h);
         fleshcontext.globalAlpha = 1.0;
@@ -570,8 +586,8 @@
         fleshcontext.globalAlpha = 1.0;
         fleshcontext.shadowColor = null;
         fleshcontext.shadowBlur = null;
-        fleshcontext.shadowOffsetX =null;
-        fleshcontext.shadowOffsetY =null;
+        fleshcontext.shadowOffsetX = null;
+        fleshcontext.shadowOffsetY = null;
         fleshcontext.globalCompositeOperation = "source-over";
 
         // Draw marbling
