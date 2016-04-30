@@ -519,6 +519,46 @@
     var Voronoi = new CellularGrouping();
     Voronoi.createCells();
 
+    function SpotSet () {
+        var canvas = document.createElement("canvas");
+        canvas.width = w;
+        canvas.height = h;
+        this.context = canvas.getContext("2d");
+
+        this.spots = [];
+        this.spotslen = Math.round(Math.random() * 100);
+        var s;
+        for (i = 0; i < this.spotslen; i++) {
+            s = {
+                x: Math.random() * w,
+                y: Math.random() * h,
+                radius: Math.random() * 4,
+                opacity: Math.min(Math.random() + 0.3, 1),
+                stretch: Math.random() + 1,
+                orientation: (Math.random() * 360) * Math.PI / 180,
+                blear: Math.random() * 3 + 1
+            };
+            this.spots.push(s);
+            this.renderSpot(s);
+        }
+    }
+    SpotSet.prototype.renderSpot = function (spot) {
+        this.context.save();
+
+        this.context.translate(spot.x, spot.y);
+        this.context.rotate(spot.orientation);
+        this.context.scale(1, spot.stretch);
+
+        this.context.beginPath();
+        this.context.arc(0, 0, spot.radius, 0, 2 * Math.PI, false);
+        this.context.closePath();
+
+        this.context.fillStyle = this.context.shadowColor = "rgba(0, 0, 0, " + spot.opacity + ")";
+        this.context.shadowBlur = spot.blear;
+        this.context.fill();
+
+        this.context.restore();
+    };
 
 
     function renderFlesh (fleshbase) {
@@ -578,6 +618,12 @@
         fleshcontext.globalCompositeOperation = "source-over";
 
         // Draw moles / sun spots
+        var spots = new SpotSet();
+        fleshcontext.globalAlpha = 0.6;
+        fleshcontext.globalCompositeOperation = "soft-light";
+        fleshcontext.drawImage(spots.context.canvas, 0, 0);
+        fleshcontext.globalAlpha = 1.0;
+        fleshcontext.globalCompositeOperation = "source-over";
     }
 
     renderFlesh("#eebb99");
