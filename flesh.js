@@ -1,8 +1,6 @@
 /*jslint browser: true*/
 (function () {
     "use strict";
-    var PI = Math.PI;
-
     var flesh = document.getElementById("flesh");
     flesh.width = window.innerWidth;
     flesh.height = window.innerHeight;
@@ -238,28 +236,17 @@
     }
     SimplexNoise.prototype = {
         grad3: new window.Float32Array([1, 1, 0,
-                                - 1, 1, 0,
-                                1, - 1, 0,
-
-                                - 1, - 1, 0,
-                                1, 0, 1,
-                                - 1, 0, 1,
-
-                                1, 0, - 1,
-                                - 1, 0, - 1,
-                                0, 1, 1,
-
-                                0, - 1, 1,
-                                0, 1, - 1,
-                                0, - 1, - 1]),
-        grad4: new window.Float32Array([0, 1, 1, 1, 0, 1, 1, - 1, 0, 1, - 1, 1, 0, 1, - 1, - 1,
-                                0, - 1, 1, 1, 0, - 1, 1, - 1, 0, - 1, - 1, 1, 0, - 1, - 1, - 1,
-                                1, 0, 1, 1, 1, 0, 1, - 1, 1, 0, - 1, 1, 1, 0, - 1, - 1,
-                                - 1, 0, 1, 1, - 1, 0, 1, - 1, - 1, 0, - 1, 1, - 1, 0, - 1, - 1,
-                                1, 1, 0, 1, 1, 1, 0, - 1, 1, - 1, 0, 1, 1, - 1, 0, - 1,
-                                - 1, 1, 0, 1, - 1, 1, 0, - 1, - 1, - 1, 0, 1, - 1, - 1, 0, - 1,
-                                1, 1, 1, 0, 1, 1, - 1, 0, 1, - 1, 1, 0, 1, - 1, - 1, 0,
-                                - 1, 1, 1, 0, - 1, 1, - 1, 0, - 1, - 1, 1, 0, - 1, - 1, - 1, 0]),
+                                        -1, 1, 0,
+                                        1, -1, 0,
+                                        -1, -1, 0,
+                                        1, 0, 1,
+                                        -1, 0, 1,
+                                        1, 0, -1,
+                                        -1, 0, -1,
+                                        0, 1, 1,
+                                        0, -1, 1,
+                                        0, 1, -1,
+                                        0, -1, -1]),
         noise: function (xin, yin, zin) {
             var permMod12 = this.permMod12,
                 perm = this.perm,
@@ -280,49 +267,25 @@
             var i2, j2, k2;
             if (x0 >= y0) {
                 if (y0 >= z0) {
-                    i1 = 1;
-                    j1 = 0;
-                    k1 = 0;
-                    i2 = 1;
-                    j2 = 1;
-                    k2 = 0;
+                    i1 = i2 = j2 = 1;
+                    j1 = k1 = k2 = 0;
                 } else if (x0 >= z0) {
-                    i1 = 1;
-                    j1 = 0;
-                    k1 = 0;
-                    i2 = 1;
-                    j2 = 0;
-                    k2 = 1;
+                    i1 = i2 = k2 = 1;
+                    j1 = k1 = j2 = 0;
                 } else {
-                    i1 = 0;
-                    j1 = 0;
-                    k1 = 1;
-                    i2 = 1;
-                    j2 = 0;
-                    k2 = 1;
+                    i1 = j1 = j2 = 0;
+                    k1 = i2 = k2 = 1;
                 }
             } else {
                 if (y0 < z0) {
-                    i1 = 0;
-                    j1 = 0;
-                    k1 = 1;
-                    i2 = 0;
-                    j2 = 1;
-                    k2 = 1;
+                    i1 = j1 = i2 = 0;
+                    k1 = j2 = k2 = 1;
                 } else if (x0 < z0) {
-                    i1 = 0;
-                    j1 = 1;
-                    k1 = 0;
-                    i2 = 0;
-                    j2 = 1;
-                    k2 = 1;
+                    i1 = k1 = i2 = 0;
+                    j1 = j2 = k2 = 1;
                 } else {
-                    i1 = 0;
-                    j1 = 1;
-                    k1 = 0;
-                    i2 = 1;
-                    j2 = 1;
-                    k2 = 0;
+                    i1 = k1 = k2 = 0;
+                    j1 = i2 = j2 = 1;
                 }
             }
             var x1 = x0 - i1 + this.G3;
@@ -405,11 +368,12 @@
     };
     var SNoise = new SimplexNoise();
 
+
     // Voronoi
     function CellularGrouping () {
         var cellcanvas = document.createElement("canvas");
-        cellcanvas.width = w;
-        cellcanvas.height = h;
+        this.w = cellcanvas.width = Math.round(w / 3);
+        this.h = cellcanvas.height = Math.round(h / 3);
         this.context = cellcanvas.getContext("2d");
 
         var verts = [];
@@ -429,54 +393,60 @@
 
             return false;
         }
-        for (i = 0; i < 1000; i++) {
+        for (i = 0; i < 200; i++) {
             p = {
-                x: Math.round(Math.random() * w),
-                y: Math.round(Math.random() * h)
+                x: Math.round(Math.random() * this.w),
+                y: Math.round(Math.random() * this.h)
             };
 
             if (isTooClose(p) === false) {
                 verts.push(p);
             }
         }
+        verts.sort(function (a, b) {
+            if(a.y < b.y) {
+                return -1;
+            }
+            if(a.y > b.y) {
+                return 1;
+            }
+            if(a.x < b.x) {
+                return -1;
+            }
+            if(a.x > b.x) {
+                return 1;
+            }
+            return 0;
+        });
         this.verts = verts;
     }
-    // CellularGrouping.prototype.renderCells = function (verts) {
-    //     // https://github.com/philogb/blog/blob/gh-pages/assets/voronoijs/voronoi.js
-    // };
-    CellularGrouping.prototype.renderCells = function () {
+    CellularGrouping.prototype.createCells = function () {
         // kudos to http://somethinghitme.com/projects/cell/ ... SQRT(D2 - D1)
         var verts = this.verts,
-            imageData = this.context.createImageData(w, h),
-            pSize = 2,
+            imageData = this.context.createImageData(this.w, this.h),
+            pSize = 1,
             thing = 255 / 6,
             pLen = verts.length,
-            points = [];
+            points = [],
+            WH = this.w * this.h;
 
         // Check distance with all other points
-        // TODO: big refactor on this loop, if possible. Way too slow!
         var x, y, pix, piy, p, c, dist, dist2, firstPoint, curMinDist, curMinDist2;
-        for(x = 0; x < w; x += pSize) {
-            for(y = 0; y < h; y += pSize) {
-                p = 0;
-                dist = 0;
-                dist2 = 0;
-                firstPoint = 0;
-                curMinDist = w * h;
+        for (x = 0; x < this.w; x += pSize) {
+            for (y = 0; y < this.h; y += pSize) {
+                curMinDist = curMinDist2 = WH;
 
-                for(p=0; p < pLen; p++){
+                for (p = 0; p < pLen; p++) {
                     dist = Math.sqrt((verts[p].x - x) *(verts[p].x - x) + (verts[p].y - y) * (verts[p].y - y));
 
-                    if(dist < curMinDist){
+                    if(dist < curMinDist) {
                         firstPoint = p;
                         curMinDist = dist;
                     }
                 }
 
 
-                curMinDist2 = w * h;
-
-                for(p=0; p < pLen; p++){
+                for ( p = 0; p < pLen; p++) {
                     if(p !== firstPoint){
                         dist2 = Math.sqrt((verts[p].x - x) *(verts[p].x - x) + (verts[p].y - y) * (verts[p].y - y));
 
@@ -485,17 +455,17 @@
                         }
                     }
                 }
-                points[y * w + x] = curMinDist2 - curMinDist;
+                points[y * this.w + x] = curMinDist2 - curMinDist;
             }
         }
 
         // Draw points
-        for(x = 0; x < w; x += pSize){
-            for(y = 0; y < h; y += pSize){
+        for(x = 0; x < this.w; x += pSize){
+            for(y = 0; y < this.h; y += pSize){
                 for(pix = 0; pix < pSize; pix++){
                     for(piy = 0; piy < pSize; piy++){
-                        i = ((x + pix) + (y + piy) * imageData.width) * 4;
-                        c = parseInt(points[y * w + x] * thing, 10);
+                        i = ((x + pix) + (y + piy) * this.w) * 4;
+                        c = parseInt(points[y * this.w + x] * thing, 10);
                         imageData.data[i] = c;
                         imageData.data[i+1] = c;
                         imageData.data[i+2] = c;
@@ -507,54 +477,47 @@
         }
 
         this.context.putImageData(imageData, 0, 0);
-
     };
-    CellularGrouping.prototype.renderInQuadrants = function (context) {
-        var q = 0,
-            hw = w / 2,
-            hh = h / 2,
-            ow = 0,
-            oh = 0;
-        for (q = 0; q < 4; q++) {
-            //// draw once for lighting
-            context.globalCompositeOperation = "overlay";
-            context.globalAlpha = 0.35;
-            context.shadowColor = "rgba(255, 255, 255, 0.5)";
-            context.shadowBlur = 1.0;
-            context.shadowOffsetX = 0.0;
-            context.shadowOffsetY = 2.0;
-            context.drawImage(this.context.canvas, hw * ow, hh * oh, hw, hh);
+    CellularGrouping.prototype.preparePattern = function (fleshbase) {
+        var ca = document.createElement("canvas");
+        ca.width = Math.round(this.context.canvas.width / 2);
+        ca.height = Math.round(this.context.canvas.height / 2);
+        var context = ca.getContext("2d");
 
-            //// draw again for lines
-            context.globalAlpha = 0.03;
-            context.shadowColor = "rgba(0, 0, 0, 0.7)";
-            context.shadowBlur = 0.001;
-            context.shadowOffsetX = 0.0;
-            context.shadowOffsetY = -3.0;
-            context.globalCompositeOperation = "multiply";
-            context.drawImage(this.context.canvas, hw * ow, hh * oh, hw, hh);
-            if (q === 0 || q === 2) {
-                ow = 1;
-            } else {
-                ow = 0;
-            }
-            if (q === 0 || q === 3) {
-                oh = 0;
-            } else {
-                oh = 1;
-            }
-        }
+        // Fill pattern with skin tone
+        context.fillStyle = fleshbase;
+        context.fillRect(0, 0, w, h);
 
+        // draw once for lighting
+        context.globalCompositeOperation = "overlay";
+        context.globalAlpha = 0.35;
+        context.shadowColor = "rgba(255, 255, 255, 0.5)";
+        context.shadowBlur = 1.0;
+        context.shadowOffsetX = 0.0;
+        context.shadowOffsetY = 2.0;
+        context.drawImage(this.context.canvas, 0, 0, ca.width, ca.height);
+
+        // draw again for lines
+        context.globalCompositeOperation = "multiply";
+        context.globalAlpha = 0.03;
+        context.shadowColor = "rgba(0, 0, 0, 0.7)";
+        context.shadowBlur = 0.001;
+        context.shadowOffsetX = 0.0;
+        context.shadowOffsetY = -3.0;
+        context.drawImage(this.context.canvas, 0, 0, ca.width, ca.height);
+
+        // reset context
         context.globalAlpha = 1.0;
         context.shadowColor = null;
         context.shadowBlur = null;
         context.shadowOffsetX = null;
         context.shadowOffsetY = null;
         context.globalCompositeOperation = "source-over";
+
+        this.pattern = context;
     };
     var Voronoi = new CellularGrouping();
-    Voronoi.renderCells();
-
+    Voronoi.createCells();
 
 
 
@@ -568,10 +531,9 @@
         fleshcontext.fillRect(0, 0, w, h);
 
         // Draw leather-like creases
-        Voronoi.renderInQuadrants(fleshcontext);
-        //// redraw fleshbase, lighter
-        fleshcontext.globalAlpha = 0.6;
-        fleshcontext.fillStyle = fleshbase;
+        Voronoi.preparePattern(fleshbase);
+        fleshcontext.fillStyle = fleshcontext.createPattern(Voronoi.pattern.canvas, "repeat");
+        fleshcontext.globalAlpha = 0.4;
         fleshcontext.fillRect(0, 0, w, h);
         fleshcontext.globalAlpha = 1.0;
 
@@ -616,7 +578,6 @@
         fleshcontext.globalCompositeOperation = "source-over";
 
         // Draw moles / sun spots
-        // TODO: ^^^^
     }
 
     renderFlesh("#eebb99");
