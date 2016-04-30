@@ -562,7 +562,7 @@
 
 
     function renderFlesh (fleshbase) {
-        document.querySelector("html").style.background = fleshbase;
+        document.documentElement.style.background = fleshbase;
 
         fleshcontext.clearRect(0, 0, w, h);
 
