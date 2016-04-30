@@ -596,7 +596,7 @@
         SNoise.render(function (data) {
             data.x /= w;
             data.y /= h;
-            data.s = 20;
+            data.s = 10;
             data.no = SNoise.noise(data.s * data.x, (h / w * data.s) * data.y, 1) * 0.1 + 0.3;
             data.r = data.g = data.b = 255 * data.no;
 
