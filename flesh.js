@@ -628,8 +628,6 @@
 
     renderFlesh("#eebb99");
 
-    // To 3D-ify it? http://jsfiddle.net/loktar/4qAxZ/
-
     document.getElementById("menu").addEventListener("click", function (e) {
         var t = e.target || e.srcElement;
         if (t && t.nodeName.toLowerCase() === "span") {
