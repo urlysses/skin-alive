@@ -8,6 +8,10 @@ canvas {
     font-size: 0;
 }
 
+canvas {
+    position: absolute;
+}
+
 #menu {
     position: absolute;
     top: 10px;

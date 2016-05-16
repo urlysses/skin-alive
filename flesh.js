@@ -1,15 +1,58 @@
 /*jslint browser: true*/
-(function () {
+(function (twgl) {
     "use strict";
     var flesh = document.getElementById("flesh");
-    flesh.width = window.innerWidth;
-    flesh.height = window.innerHeight;
+    var fleshnormal = document.getElementById("fleshnormal");
+    var flesh3d = document.getElementById("flesh3d");
+    flesh.width = fleshnormal.width = flesh3d.width = window.innerWidth;
+    flesh.height = fleshnormal.height = flesh3d.height = window.innerHeight;
 
     var fleshcontext = flesh.getContext("2d");
+    var normalcontext = fleshnormal.getContext("2d");
 
+    var TO_RAD = Math.PI / 180;
     var w = flesh.width,
         h = flesh.height,
         i = 0;
+
+
+    // 3D
+    twgl.setDefaults({attribPrefix: "a_"});
+    var gl = twgl.getWebGLContext(flesh3d);
+    var programInfo = twgl.createProgramInfo(gl, ["vshader", "fshader"]);
+    var plane = twgl.primitives.createPlaneBufferInfo(gl, w, h);
+    var m4 = twgl.m4;
+    var v3 = twgl.v3;
+    var lightWorldPosition = [0, 0, w > h ? w : h];
+    var lightColor = [1, 1, 1, 1];
+    var camera = m4.identity();
+    var texture = twgl.createTexture(gl, {src: fleshcontext.canvas});
+    var bumpmap = twgl.createTexture(gl, {src: fleshnormal});
+    var view = m4.identity();
+    var viewProjection = m4.identity();
+    var uniforms = {
+        u_lightWorldPos: lightWorldPosition,
+        u_lightColor: lightColor,
+        u_diffuseMult: [1, 1, 1, 1],
+        u_specular: [1, 1, 1, 1],
+        u_shininess: 50,
+        u_specularFactor: 1,
+        u_diffuse: texture,
+        u_viewInverse: camera,
+        u_world: m4.identity(),
+        u_worldInverseTranspose: m4.identity(),
+        u_worldViewProjection: m4.identity(),
+        u_bumpmap: bumpmap
+    };
+    var skin = {
+        translation: [0, 0, 0],
+        uniforms: uniforms
+    };
+    var drawObjects = [{
+        programInfo: programInfo,
+        bufferInfo: plane,
+        uniforms: uniforms
+    }];
 
     // Bog-standard noise
     var imgdata = fleshcontext.createImageData(w, h),
@@ -206,6 +249,7 @@
             _this.context.stroke();
         });
     };
+    var veins = new VeinSet();
 
 
     // Perlin/Simplex noise
@@ -479,14 +523,21 @@
         this.context.putImageData(imageData, 0, 0);
     };
     CellularGrouping.prototype.preparePattern = function (fleshbase) {
+        var cw, ch;
         var ca = document.createElement("canvas");
-        ca.width = Math.round(this.context.canvas.width / 2);
-        ca.height = Math.round(this.context.canvas.height / 2);
         var context = ca.getContext("2d");
+        var norm = document.createElement("canvas");
+        var normcontext = norm.getContext("2d");
+
+        cw = ca.width = norm.width = Math.round(this.context.canvas.width / 2);
+        ch = ca.height = norm.height = Math.round(this.context.canvas.height / 2);
 
         // Fill pattern with skin tone
         context.fillStyle = fleshbase;
         context.fillRect(0, 0, w, h);
+
+        normcontext.fillStyle = "rgba(127, 127, 255, 1)";
+        normcontext.fillRect(0, 0, w, h);
 
         // draw once for lighting
         context.globalCompositeOperation = "overlay";
@@ -495,7 +546,14 @@
         context.shadowBlur = 1.0;
         context.shadowOffsetX = 0.0;
         context.shadowOffsetY = 2.0;
-        context.drawImage(this.context.canvas, 0, 0, ca.width, ca.height);
+        context.drawImage(this.context.canvas, 0, 0, cw, ch);
+
+        normcontext.globalCompositeOperation = "overlay";
+        normcontext.shadowColor = "rgba(255, 127, 255, 1)";
+        normcontext.shadowBlur = 1.0;
+        normcontext.shadowOffsetX = 2.0;
+        normcontext.shadowOffsetY = 0.0;
+        normcontext.drawImage(this.context.canvas, 0, 0, cw, ch);
 
         // draw again for lines
         context.globalCompositeOperation = "multiply";
@@ -504,15 +562,24 @@
         context.shadowBlur = 0.001;
         context.shadowOffsetX = 0.0;
         context.shadowOffsetY = -3.0;
-        context.drawImage(this.context.canvas, 0, 0, ca.width, ca.height);
+        context.drawImage(this.context.canvas, 0, 0, cw, ch);
+
+        normcontext.globalCompositeOperation = "overlay";
+        normcontext.shadowColor = "rgba(127, 255, 127, 1)";
+        normcontext.shadowBlur = 1.0;
+        normcontext.shadowOffsetX = 0.0;
+        normcontext.shadowOffsetY = 3.0;
+        normcontext.drawImage(this.context.canvas, 0, 0, cw, ch);
 
         // reset context
-        context.globalAlpha = 1.0;
-        context.shadowColor = null;
-        context.shadowBlur = null;
-        context.shadowOffsetX = null;
-        context.shadowOffsetY = null;
-        context.globalCompositeOperation = "source-over";
+        normcontext.globalAlpha = context.globalAlpha = 1.0;
+        normcontext.shadowColor = context.shadowColor = null;
+        normcontext.shadowBlur = context.shadowBlur = null;
+        normcontext.shadowOffsetX = context.shadowOffsetX = null;
+        normcontext.shadowOffsetY = context.shadowOffsetY = null;
+        normcontext.globalCompositeOperation = context.globalCompositeOperation = "source-over";
+
+        this.normal = normcontext;
 
         this.pattern = context;
     };
@@ -559,6 +626,7 @@
 
         this.context.restore();
     };
+    var spots = new SpotSet();
 
 
     function renderFlesh (fleshbase) {
@@ -610,7 +678,6 @@
 
 
         // Draw veins
-        var veins = new VeinSet();
         fleshcontext.globalAlpha = 0.3;
         fleshcontext.globalCompositeOperation = "overlay";
         fleshcontext.drawImage(veins.context.canvas, 0, 0);
@@ -618,7 +685,6 @@
         fleshcontext.globalCompositeOperation = "source-over";
 
         // Draw moles / sun spots
-        var spots = new SpotSet();
         fleshcontext.globalAlpha = 0.6;
         fleshcontext.globalCompositeOperation = "soft-light";
         fleshcontext.drawImage(spots.context.canvas, 0, 0);
@@ -626,7 +692,116 @@
         fleshcontext.globalCompositeOperation = "source-over";
     }
 
+    function prepareNormalMap () {
+        // This could use some cleaning up but overall it's not bad.
+        normalcontext.clearRect(0, 0, w, h);
+        normalcontext.shadowBlur = normalcontext.shadowColor =
+            normalcontext.shadowOffsetX = normalcontext.shadowOffsetY = null;
+
+        // Get that blueish
+        normalcontext.globalCompositeOperation = "source-over";
+        normalcontext.fillStyle = "rgba(127, 127, 255, 1)";
+        normalcontext.fillRect(0, 0, w, h);
+
+        // Leather
+        normalcontext.globalAlpha = 0.7;
+        normalcontext.fillStyle = normalcontext.createPattern(Voronoi.normal.canvas, "repeat");
+        normalcontext.fillRect(0, 0, w, h);
+
+        // Noise
+        noisecontext.globalCompositeOperation = "source-in";
+        noisecontext.globalAlpha = 1.0;
+        noisecontext.fillStyle = "rgba(127, 127, 255, 1)";
+        noisecontext.fillRect(0, 0, w, h);
+
+        normalcontext.shadowBlur = 0;
+        normalcontext.shadowColor = "rgba(127, 255, 127, 0.3)";
+        normalcontext.shadowOffsetY = -1;
+        normalcontext.drawImage(noisecontext.canvas, 0, 0);
+        normalcontext.shadowColor = "rgba(127, 255, 127, 0.3)";
+        normalcontext.shadowOffsetY = -1;
+        normalcontext.drawImage(noisecontext.canvas, 0, 0);
+
+        normalcontext.shadowColor = "rgba(255, 127, 127, 0.3)";
+        normalcontext.shadowOffsetY = 0;
+        normalcontext.shadowOffsetX = 1;
+        normalcontext.drawImage(noisecontext.canvas, 0, 0);
+
+        //// Reset normalcontext
+        normalcontext.globalAlpha = 1.0;
+        normalcontext.shadowColor = normalcontext.shadowOffsetY = normalcontext.shadowOffsetX = null;
+
+        //// Reset noisecontext
+        noisecontext.globalCompositeOperation = "source-in";
+        noisecontext.globalAlpha = 1.0;
+        noisecontext.fillStyle = "rgba(0, 0, 0, 1)";
+        noisecontext.fillRect(0, 0, w, h);
+
+        // Veins
+        normalcontext.globalAlpha = 0.5;
+        normalcontext.globalCompositeOperation = "overlay";
+        normalcontext.shadowColor = "rgba(127, 255, 127, 1)";
+        normalcontext.shadowOffsetY = -2.0;
+        normalcontext.shadowOffsetX = 0.0;
+        normalcontext.drawImage(veins.context.canvas, 0, 0);
+        normalcontext.shadowColor = "rgba(255, 127, 127, 1)";
+        normalcontext.shadowOffsetY = 0.0;
+        normalcontext.shadowOffsetX = 2.0;
+        normalcontext.drawImage(veins.context.canvas, 0, 0);
+
+        //// Reset normalcontext
+        normalcontext.globalAlpha = 1.0;
+        normalcontext.shadowColor = normalcontext.shadowOffsetY = normalcontext.shadowOffsetX = null;
+    }
+
+
+    var bigger = w > h ? w : h;
+    var smaller = w > h ? h : w;
+    var fov = Math.min(1, (smaller / bigger) * 100 * TO_RAD);
+    var projection = m4.perspective(fov, w / h, 0.5, bigger + 1);
+    var target = v3.copy([0, 0, 0]);
+    var eye = v3.copy([0, 0, -bigger / 2]);
+    var up = [0, 1, 0];
+    var world;
+    function renderFlesh3D () {
+        gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+
+        gl.enable(gl.DEPTH_TEST);
+        gl.enable(gl.CULL_FACE);
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+        m4.lookAt(eye, target, up, camera);
+        m4.inverse(camera, view);
+        m4.multiply(view, projection, viewProjection);
+
+        world = skin.uniforms.u_world;
+        m4.identity(world);
+        m4.translate(world, skin.translation, world);
+        m4.rotateX(world, -90 * TO_RAD, world);
+        m4.rotateY(world, 180 * TO_RAD, world);
+        m4.transpose(m4.inverse(world, skin.uniforms.u_worldInverseTranspose), skin.uniforms.u_worldInverseTranspose);
+        m4.multiply(skin.uniforms.u_world, viewProjection, skin.uniforms.u_worldViewProjection);
+
+        twgl.drawObjectList(gl, drawObjects);
+
+        // window.requestAnimationFrame(renderFlesh3D);
+    }
+    function prepareFlesh3D () {
+        prepareNormalMap();
+        twgl.setTextureFromElement(gl, bumpmap, fleshnormal);
+        twgl.setTextureFromElement(gl, texture, fleshcontext.canvas);
+        window.requestAnimationFrame(renderFlesh3D);
+    }
+
     renderFlesh("#eebb99");
+    prepareFlesh3D();
+
+    // TODO:
+    // http://www.fabiensanglard.net/bumpMapping/index.php
+    // http://www.ozone3d.net/tutorials/bump_mapping_p4.php
+    // http://stackoverflow.com/a/2368794
+    // http://learnopengl.com/#!Advanced-Lighting/Normal-Mapping
+    // http://www.pheelicks.com/2014/01/webgl-tombstone-bump-mapping/
 
     document.getElementById("menu").addEventListener("click", function (e) {
         var t = e.target || e.srcElement;
@@ -634,4 +809,4 @@
             renderFlesh(t.getAttribute("data-color"));
         }
     });
-}());
+}(window.twgl));
