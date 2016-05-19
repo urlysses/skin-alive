@@ -64,11 +64,6 @@
         translation: [0, 0, 40],
         uniforms: uniforms
     };
-    var drawObjects = [{
-        programInfo: programInfo,
-        bufferInfo: plane,
-        uniforms: uniforms
-    }];
 
     // Bog-standard noise
     var imgdata = fleshcontext.createImageData(w, h),
@@ -796,9 +791,21 @@
     function renderFlesh3D () {
         gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
-        gl.enable(gl.DEPTH_TEST);
-        gl.enable(gl.CULL_FACE);
+        // gl.enable(gl.DEPTH_TEST);
+        // gl.enable(gl.CULL_FACE);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+        gl.useProgram(programInfo.program);
+        twgl.setBuffersAndAttributes(gl, programInfo, plane);
+        twgl.setUniforms(programInfo, uniforms);
+        twgl.drawBufferInfo(gl, gl.TRIANGLES, plane);
+
+        // window.requestAnimationFrame(renderFlesh3D);
+    }
+    function prepareFlesh3D () {
+        prepareNormalMap();
+        twgl.setTextureFromElement(gl, bumpmap, fleshnormal);
+        twgl.setTextureFromElement(gl, texture, fleshcontext.canvas);
 
         m4.lookAt(eye, target, up, camera);
         m4.inverse(camera, view);
@@ -816,15 +823,6 @@
         gl.bindBuffer(gl.ARRAY_BUFFER, tangentBuffer);
         gl.vertexAttribPointer(tangentLoc, 3, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(tangentLoc);
-
-        twgl.drawObjectList(gl, drawObjects);
-
-        // window.requestAnimationFrame(renderFlesh3D);
-    }
-    function prepareFlesh3D () {
-        prepareNormalMap();
-        twgl.setTextureFromElement(gl, bumpmap, fleshnormal);
-        twgl.setTextureFromElement(gl, texture, fleshcontext.canvas);
 
         if (!is3d) {
             is3d = true;
