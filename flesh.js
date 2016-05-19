@@ -21,6 +21,20 @@
     var gl = twgl.getWebGLContext(flesh3d);
     var programInfo = twgl.createProgramInfo(gl, ["vshader", "fshader"]);
     var plane = twgl.primitives.createPlaneBufferInfo(gl, w, h);
+
+    var tangentLoc = gl.getAttribLocation(programInfo.program, "a_tangent");
+    gl.enableVertexAttribArray(tangentLoc);
+
+    var tangentBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, tangentBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new window.Float32Array([
+        2.0, 0.0, 0.0,
+        2.0, 0.0, 0.0,
+        2.0, 0.0, 0.0,
+        2.0, 0.0, 0.0
+    ]), gl.STATIC_DRAW);
+    tangentBuffer.count = 4;
+
     var m4 = twgl.m4;
     var v3 = twgl.v3;
     var lightWorldPosition = [0, 0, w > h ? w : h];
@@ -35,8 +49,8 @@
         u_lightColor: lightColor,
         u_diffuseMult: [1, 1, 1, 1],
         u_specular: [1, 1, 1, 1],
-        u_shininess: 50,
-        u_specularFactor: 1,
+        u_shininess: 100,
+        u_specularFactor: 10,
         u_diffuse: texture,
         u_viewInverse: camera,
         u_world: m4.identity(),
@@ -694,9 +708,24 @@
 
     function prepareNormalMap () {
         // This could use some cleaning up but overall it's not bad.
+
+        // Courtesy of all kinds of reading:
+        // http://www.fabiensanglard.net/bumpMapping/index.php
+        // http://www.ozone3d.net/tutorials/bump_mapping_p4.php
+        // http://stackoverflow.com/a/2368794
+        // http://learnopengl.com/#!Advanced-Lighting/Normal-Mapping
+        // http://www.pheelicks.com/2014/01/webgl-tombstone-bump-mapping/
+        // https://github.com/mattdesl/lwjgl-basics/wiki/ShaderLesson6
+        // http://math.hws.edu/graphicsbook/source/webgl/bumpmap.html
+        // http://www.opengl-tutorial.org/intermediate-tutorials/tutorial-13-normal-mapping/
+        // http://www.damix.it/public/webgl/normal-mapping.html
+        // http://voxelent.com/html/beginners-guide/chapter_10/ch10_NormalMap.html
+
         normalcontext.clearRect(0, 0, w, h);
-        normalcontext.shadowBlur = normalcontext.shadowColor =
-            normalcontext.shadowOffsetX = normalcontext.shadowOffsetY = null;
+        normalcontext.shadowBlur =
+            normalcontext.shadowColor =
+            normalcontext.shadowOffsetX =
+            normalcontext.shadowOffsetY = null;
 
         // Get that blueish
         normalcontext.globalCompositeOperation = "source-over";
@@ -740,11 +769,11 @@
         // Veins
         normalcontext.globalAlpha = 0.5;
         normalcontext.globalCompositeOperation = "overlay";
-        normalcontext.shadowColor = "rgba(127, 255, 127, 1)";
+        normalcontext.shadowColor = "rgba(255, 127, 255, 1)";
         normalcontext.shadowOffsetY = -2.0;
         normalcontext.shadowOffsetX = 0.0;
         normalcontext.drawImage(veins.context.canvas, 0, 0);
-        normalcontext.shadowColor = "rgba(255, 127, 127, 1)";
+        normalcontext.shadowColor = "rgba(127, 255, 127, 1)";
         normalcontext.shadowOffsetY = 0.0;
         normalcontext.shadowOffsetX = 2.0;
         normalcontext.drawImage(veins.context.canvas, 0, 0);
@@ -779,8 +808,13 @@
         m4.translate(world, skin.translation, world);
         m4.rotateX(world, -90 * TO_RAD, world);
         m4.rotateY(world, 180 * TO_RAD, world);
-        m4.transpose(m4.inverse(world, skin.uniforms.u_worldInverseTranspose), skin.uniforms.u_worldInverseTranspose);
+        m4.transpose(m4.inverse(world, skin.uniforms.u_worldInverseTranspose),
+                skin.uniforms.u_worldInverseTranspose);
         m4.multiply(skin.uniforms.u_world, viewProjection, skin.uniforms.u_worldViewProjection);
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, tangentBuffer);
+        gl.vertexAttribPointer(tangentLoc, 3, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(tangentLoc);
 
         twgl.drawObjectList(gl, drawObjects);
 
@@ -790,23 +824,18 @@
         prepareNormalMap();
         twgl.setTextureFromElement(gl, bumpmap, fleshnormal);
         twgl.setTextureFromElement(gl, texture, fleshcontext.canvas);
+
         window.requestAnimationFrame(renderFlesh3D);
     }
 
     renderFlesh("#eebb99");
     prepareFlesh3D();
 
-    // TODO:
-    // http://www.fabiensanglard.net/bumpMapping/index.php
-    // http://www.ozone3d.net/tutorials/bump_mapping_p4.php
-    // http://stackoverflow.com/a/2368794
-    // http://learnopengl.com/#!Advanced-Lighting/Normal-Mapping
-    // http://www.pheelicks.com/2014/01/webgl-tombstone-bump-mapping/
-
     document.getElementById("menu").addEventListener("click", function (e) {
         var t = e.target || e.srcElement;
         if (t && t.nodeName.toLowerCase() === "span") {
             renderFlesh(t.getAttribute("data-color"));
+            prepareFlesh3D();
         }
     });
 }(window.twgl));

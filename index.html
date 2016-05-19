@@ -15,7 +15,7 @@
     <body>
         <canvas id="flesh"></canvas>
         <canvas id="fleshnormal" style="display: none;"></canvas>
-        <canvas id="flesh3d"></canvas>
+        <canvas id="flesh3d" style="top: 0%;"></canvas>
         <div id="menu">
             <span data-color="#f9dcbe">🏻</span>
             <span data-color="#dfbb97">🏼</span>
@@ -30,10 +30,9 @@
             uniform mat4 u_viewInverse;
             uniform mat4 u_worldInverseTranspose;
 
-            uniform sampler2D u_bumpmap;
-
             attribute vec4 a_position;
             attribute vec3 a_normal;
+            attribute vec3 a_tangent;
             attribute vec2 a_texcoord;
 
             varying vec4 v_position;
@@ -41,6 +40,7 @@
             varying vec3 v_normal;
             varying vec3 v_surfaceToLight;
             varying vec3 v_surfaceToView;
+            varying vec3 v_tangent;
 
             void main() {
                 v_texCoord = a_texcoord;
@@ -48,21 +48,24 @@
                 v_normal = (u_worldInverseTranspose * vec4(a_normal, 0)).xyz;
                 v_surfaceToLight = u_lightWorldPos - (u_world * a_position).xyz;
                 v_surfaceToView = (u_viewInverse[3] - (u_world * a_position)).xyz;
+                v_tangent = (u_worldInverseTranspose * vec4(a_tangent, 0)).xyz;
                 gl_Position = v_position;
             }
         </script>
         <script id="fshader" type="text/fragment-shader">
-            precision mediump float;
+            precision lowp float;
 
             varying vec4 v_position;
             varying vec2 v_texCoord;
             varying vec3 v_normal;
+            varying vec3 v_tangent;
             varying vec3 v_surfaceToLight;
             varying vec3 v_surfaceToView;
 
             uniform vec4 u_lightColor;
             uniform vec4 u_diffuseMult;
             uniform sampler2D u_diffuse;
+            uniform sampler2D u_bumpmap;
             uniform vec4 u_specular;
             uniform float u_shininess;
             uniform float u_specularFactor;
@@ -76,7 +79,17 @@
                 if (diffuseColor.a < 0.1) {
                     discard;
                 }
-                vec3 a_normal = normalize(v_normal);
+
+                vec3 normalTransform = texture2D(u_bumpmap, v_texCoord).xyz;
+                normalTransform.y = 1.0 - normalTransform.z;
+                normalTransform = 2.0 * normalTransform - vec3(1.0, 1.0, 1.0);
+                normalTransform.z *= 10.0;
+
+
+                vec3 binormal = cross(v_normal, v_tangent);
+                vec3 normal = normalTransform.x * v_tangent + normalTransform.y * binormal + normalTransform.z * v_normal;
+
+                vec3 a_normal = normalize(normal);
                 vec3 surfaceToLight = normalize(v_surfaceToLight);
                 vec3 surfaceToView = normalize(v_surfaceToView);
                 vec3 halfVector = normalize(surfaceToLight + surfaceToView);
