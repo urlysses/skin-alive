@@ -37,7 +37,9 @@
 
     var m4 = twgl.m4;
     var v3 = twgl.v3;
-    var lightWorldPosition = [0, 0, w > h ? w : h];
+    var bigger = w > h ? w : h;
+    var smaller = w > h ? h : w;
+    var lightWorldPosition = [0, 0, bigger];
     var lightColor = [1, 1, 1, 1];
     var camera = m4.identity();
     var texture = twgl.createTexture(gl, {src: fleshcontext.canvas});
@@ -47,9 +49,9 @@
     var uniforms = {
         u_lightWorldPos: lightWorldPosition,
         u_lightColor: lightColor,
-        u_diffuseMult: [1, 1, 1, 1],
+        u_diffuseMult: [0.4, 0.4, 0.4, 0.4],
         u_specular: [1, 1, 1, 1],
-        u_shininess: 100,
+        u_shininess: 1000,
         u_specularFactor: 10,
         u_diffuse: texture,
         u_viewInverse: camera,
@@ -59,7 +61,7 @@
         u_bumpmap: bumpmap
     };
     var skin = {
-        translation: [0, 0, 0],
+        translation: [0, 0, 40],
         uniforms: uniforms
     };
     var drawObjects = [{
@@ -784,14 +786,13 @@
     }
 
 
-    var bigger = w > h ? w : h;
-    var smaller = w > h ? h : w;
     var fov = Math.min(1, (smaller / bigger) * 100 * TO_RAD);
     var projection = m4.perspective(fov, w / h, 0.5, bigger + 1);
     var target = v3.copy([0, 0, 0]);
     var eye = v3.copy([0, 0, -bigger / 2]);
     var up = [0, 1, 0];
     var world;
+    var is3d;
     function renderFlesh3D () {
         gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
@@ -825,7 +826,10 @@
         twgl.setTextureFromElement(gl, bumpmap, fleshnormal);
         twgl.setTextureFromElement(gl, texture, fleshcontext.canvas);
 
-        window.requestAnimationFrame(renderFlesh3D);
+        if (!is3d) {
+            is3d = true;
+            window.requestAnimationFrame(renderFlesh3D);
+        }
     }
 
     renderFlesh("#eebb99");
