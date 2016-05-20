@@ -40,7 +40,7 @@
     var bigger = w > h ? w : h;
     var smaller = w > h ? h : w;
     var lightWorldPosition = [0, h / 2, -bigger];
-    var lightColor = [1, 0.94, 0.88, 1];
+    var lightColor = [1, 1, 1, 1];
     var camera = m4.identity();
     var texture = twgl.createTexture(gl, {src: fleshcontext.canvas});
     var bumpmap = twgl.createTexture(gl, {src: fleshnormal});
@@ -50,9 +50,9 @@
         u_lightWorldPos: lightWorldPosition,
         u_lightColor: lightColor,
         u_diffuseMult: [1, 1, 1, 1],
-        u_specular: [0.3, 0.3, 0.3, 0.3],
+        u_specular: [0.25, 0.25, 0.25, 0.25],
         u_shininess: 5,
-        u_specularFactor: 1,
+        u_specularFactor: 0.4,
         u_diffuse: texture,
         u_viewInverse: camera,
         u_world: m4.identity(),
@@ -731,7 +731,7 @@
         normalcontext.fillRect(0, 0, w, h);
 
         // Leather
-        normalcontext.globalAlpha = 0.5;
+        normalcontext.globalAlpha = 0.6;
         normalcontext.fillStyle = normalcontext.createPattern(Voronoi.normal.canvas, "repeat");
         // normalcontext.fillRect(0, 0, w, h);
         normalcontext.fillRect(0, 0, w / 2, h);  // instead of filling a full rect of normal pattern,
