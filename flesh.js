@@ -39,8 +39,8 @@
     var v3 = twgl.v3;
     var bigger = w > h ? w : h;
     var smaller = w > h ? h : w;
-    var lightWorldPosition = [0, 0, bigger];
-    var lightColor = [1, 1, 1, 1];
+    var lightWorldPosition = [0, h / 2, -bigger];
+    var lightColor = [1, 0.94, 0.88, 1];
     var camera = m4.identity();
     var texture = twgl.createTexture(gl, {src: fleshcontext.canvas});
     var bumpmap = twgl.createTexture(gl, {src: fleshnormal});
@@ -49,10 +49,10 @@
     var uniforms = {
         u_lightWorldPos: lightWorldPosition,
         u_lightColor: lightColor,
-        u_diffuseMult: [0.4, 0.4, 0.4, 0.4],
-        u_specular: [1, 1, 1, 1],
-        u_shininess: 1000,
-        u_specularFactor: 10,
+        u_diffuseMult: [1, 1, 1, 1],
+        u_specular: [0.3, 0.3, 0.3, 0.3],
+        u_shininess: 5,
+        u_specularFactor: 1,
         u_diffuse: texture,
         u_viewInverse: camera,
         u_world: m4.identity(),
@@ -61,7 +61,7 @@
         u_bumpmap: bumpmap
     };
     var skin = {
-        translation: [0, 0, 40],
+        translation: [0, 0, 0],
         uniforms: uniforms
     };
 
@@ -559,10 +559,11 @@
         context.shadowOffsetY = 2.0;
         context.drawImage(this.context.canvas, 0, 0, cw, ch);
 
+        normcontext.globalAlpha = 0.6;
         normcontext.globalCompositeOperation = "overlay";
         normcontext.shadowColor = "rgba(255, 127, 255, 1)";
         normcontext.shadowBlur = 1.0;
-        normcontext.shadowOffsetX = 2.0;
+        normcontext.shadowOffsetX = -2.0;
         normcontext.shadowOffsetY = 0.0;
         normcontext.drawImage(this.context.canvas, 0, 0, cw, ch);
 
@@ -579,7 +580,7 @@
         normcontext.shadowColor = "rgba(127, 255, 127, 1)";
         normcontext.shadowBlur = 1.0;
         normcontext.shadowOffsetX = 0.0;
-        normcontext.shadowOffsetY = 3.0;
+        normcontext.shadowOffsetY = -3.0;
         normcontext.drawImage(this.context.canvas, 0, 0, cw, ch);
 
         // reset context
@@ -641,7 +642,7 @@
 
 
     function renderFlesh (fleshbase) {
-        document.documentElement.style.background = fleshbase;
+        document.documentElement.style.background = flesh3d.style.background = fleshbase;
 
         fleshcontext.clearRect(0, 0, w, h);
 
@@ -730,49 +731,29 @@
         normalcontext.fillRect(0, 0, w, h);
 
         // Leather
-        normalcontext.globalAlpha = 0.7;
+        normalcontext.globalAlpha = 0.5;
         normalcontext.fillStyle = normalcontext.createPattern(Voronoi.normal.canvas, "repeat");
-        normalcontext.fillRect(0, 0, w, h);
-
-        // Noise
-        noisecontext.globalCompositeOperation = "source-in";
-        noisecontext.globalAlpha = 1.0;
-        noisecontext.fillStyle = "rgba(127, 127, 255, 1)";
-        noisecontext.fillRect(0, 0, w, h);
-
-        normalcontext.shadowBlur = 0;
-        normalcontext.shadowColor = "rgba(127, 255, 127, 0.3)";
-        normalcontext.shadowOffsetY = -1;
-        normalcontext.drawImage(noisecontext.canvas, 0, 0);
-        normalcontext.shadowColor = "rgba(127, 255, 127, 0.3)";
-        normalcontext.shadowOffsetY = -1;
-        normalcontext.drawImage(noisecontext.canvas, 0, 0);
-
-        normalcontext.shadowColor = "rgba(255, 127, 127, 0.3)";
-        normalcontext.shadowOffsetY = 0;
-        normalcontext.shadowOffsetX = 1;
-        normalcontext.drawImage(noisecontext.canvas, 0, 0);
-
-        //// Reset normalcontext
-        normalcontext.globalAlpha = 1.0;
-        normalcontext.shadowColor = normalcontext.shadowOffsetY = normalcontext.shadowOffsetX = null;
-
-        //// Reset noisecontext
-        noisecontext.globalCompositeOperation = "source-in";
-        noisecontext.globalAlpha = 1.0;
-        noisecontext.fillStyle = "rgba(0, 0, 0, 1)";
-        noisecontext.fillRect(0, 0, w, h);
+        // normalcontext.fillRect(0, 0, w, h);
+        normalcontext.fillRect(0, 0, w / 2, h);  // instead of filling a full rect of normal pattern,
+        normalcontext.save();                    // which gets weaker as it approaches the right,
+        normalcontext.scale(-1, 1);              // we fill the left half with strong normal,
+        normalcontext.translate(-w / 2, 0);      // then we fill the right half with flipped normal
+        normalcontext.fillRect(0, 0, -w / 2, h); // so that we can get the same(-ish) lighting there.
+        normalcontext.restore();                 // A similar lhs/rhs thing is done for veins below.
 
         // Veins
-        normalcontext.globalAlpha = 0.5;
+        normalcontext.globalAlpha = 0.7;
         normalcontext.globalCompositeOperation = "overlay";
+        normalcontext.shadowBlur = 0.5;
         normalcontext.shadowColor = "rgba(255, 127, 255, 1)";
-        normalcontext.shadowOffsetY = -2.0;
         normalcontext.shadowOffsetX = 0.0;
-        normalcontext.drawImage(veins.context.canvas, 0, 0);
+        normalcontext.shadowOffsetY = -2.0;
+        normalcontext.drawImage(veins.context.canvas, 0, 0, w / 2, h, 0, 0, w / 2, h);
+        normalcontext.shadowOffsetY = 2.0;
+        normalcontext.drawImage(veins.context.canvas, w / 2, 0, w / 2, h, w / 2, 0, w / 2, h);
         normalcontext.shadowColor = "rgba(127, 255, 127, 1)";
-        normalcontext.shadowOffsetY = 0.0;
-        normalcontext.shadowOffsetX = 2.0;
+        normalcontext.shadowOffsetX = 1.0;
+        normalcontext.shadowOffsetY = 4.0;
         normalcontext.drawImage(veins.context.canvas, 0, 0);
 
         //// Reset normalcontext
@@ -787,25 +768,12 @@
     var eye = v3.copy([0, 0, -bigger / 2]);
     var up = [0, 1, 0];
     var world;
-    var is3d;
     function renderFlesh3D () {
         gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
         // gl.enable(gl.DEPTH_TEST);
         // gl.enable(gl.CULL_FACE);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
-        gl.useProgram(programInfo.program);
-        twgl.setBuffersAndAttributes(gl, programInfo, plane);
-        twgl.setUniforms(programInfo, uniforms);
-        twgl.drawBufferInfo(gl, gl.TRIANGLES, plane);
-
-        // window.requestAnimationFrame(renderFlesh3D);
-    }
-    function prepareFlesh3D () {
-        prepareNormalMap();
-        twgl.setTextureFromElement(gl, bumpmap, fleshnormal);
-        twgl.setTextureFromElement(gl, texture, fleshcontext.canvas);
 
         m4.lookAt(eye, target, up, camera);
         m4.inverse(camera, view);
@@ -824,10 +792,20 @@
         gl.vertexAttribPointer(tangentLoc, 3, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(tangentLoc);
 
-        if (!is3d) {
-            is3d = true;
-            window.requestAnimationFrame(renderFlesh3D);
-        }
+
+        gl.useProgram(programInfo.program);
+        twgl.setBuffersAndAttributes(gl, programInfo, plane);
+        twgl.setUniforms(programInfo, uniforms);
+        twgl.drawBufferInfo(gl, gl.TRIANGLES, plane);
+
+        // window.requestAnimationFrame(renderFlesh3D);
+    }
+    function prepareFlesh3D () {
+        prepareNormalMap();
+        twgl.setTextureFromElement(gl, bumpmap, fleshnormal);
+        twgl.setTextureFromElement(gl, texture, fleshcontext.canvas);
+
+        window.requestAnimationFrame(renderFlesh3D);
     }
 
     renderFlesh("#eebb99");
