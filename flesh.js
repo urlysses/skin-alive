@@ -758,6 +758,7 @@
 
         //// Reset normalcontext
         normalcontext.globalAlpha = 1.0;
+        normalcontext.globalCompositeOperation = "source-over";
         normalcontext.shadowColor = normalcontext.shadowOffsetY = normalcontext.shadowOffsetX = null;
     }
 
