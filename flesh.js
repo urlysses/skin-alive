@@ -640,6 +640,112 @@
     };
     var spots = new SpotSet();
 
+    var fleshad = (function () {
+        var white = "rgb(195, 210, 210)";
+        var red = "rgb(185, 20, 20)";
+
+        var canvas = document.createElement("canvas");
+        var context = canvas.getContext("2d");
+        canvas.width = 732;
+        canvas.height = 94;
+        canvas.bg = "rgb(0, 20, 20)";
+
+        var face = (function () {
+            var facecanvas = document.createElement("canvas");
+            facecanvas.width = 86;
+            facecanvas.height = 124;
+            facecanvas.color = canvas.bg;
+            var facecontext = facecanvas.getContext("2d");
+            facecontext.fillStyle = facecanvas.color;
+            facecontext.save();
+            facecontext.translate(-145,-88);
+            facecontext.beginPath();
+            facecontext.moveTo(187.25,88.067);
+            facecontext.bezierCurveTo(187.25,88.067,192.785,120.585,168.398,122.267);
+            facecontext.bezierCurveTo(168.398,122.267,155.317,126.64399999999999,170.427,137.367);
+            facecontext.bezierCurveTo(175.679,141.093,164.878,153.39,157.897,152.56699999999998);
+            facecontext.bezierCurveTo(150.916,151.74399999999997,181.629,175.78099999999998,207.785,156.06099999999998);
+            facecontext.bezierCurveTo(219.575,147.17199999999997,190.04399999999998,204.95299999999997,153.821,178.42);
+            facecontext.bezierCurveTo(145.896,172.61399999999998,145.673,186.935,147.715,189.177);
+            facecontext.bezierCurveTo(154.246,196.345,146.484,195.671,145.196,201.97);
+            facecontext.bezierCurveTo(143.908,208.269,151.028,210.857,151.028,210.857);
+            facecontext.bezierCurveTo(151.028,210.857,165.34199999999998,212.547,178.945,210.37199999999999);
+            facecontext.bezierCurveTo(192.01999999999998,208.28199999999998,203.988,199.75799999999998,203.971,199.63199999999998);
+            facecontext.lineTo(221.108,175.33199999999997);
+            facecontext.lineTo(230.75300000000001,140.64899999999997);
+            facecontext.lineTo(225.674,121.59099999999998);
+            facecontext.lineTo(202.129,94.281);
+            facecontext.closePath();
+            facecontext.fill();
+            facecontext.restore();
+            return facecanvas;
+        }());
+
+        context.beginPath();
+        context.shadowBlur = 2;
+        context.shadowBlur = 2.4;
+        context.shadowColor = context.fillStyle = canvas.bg;
+        context.fillRect(2, 2, canvas.width - 4, canvas.height - 4);
+        context.fillRect(2, 2, canvas.width - 4, canvas.height - 4);
+        context.fillRect(2, 2, canvas.width - 4, canvas.height - 4);
+
+        // Slogan
+        context.beginPath();
+        context.shadowColor = context.fillStyle = white;
+        context.font = "italic 30px Helvetica, sans-serif";
+        context.fillText("I appreciate the                  taste!™", 98, 55);
+        context.font = "bold italic 30px cursive";
+        context.fillText("GoodCola", 318, 55);
+        context.beginPath();
+        context.shadowColor = context.strokeStyle = white;
+        context.lineWidth = 2;
+        context.lineCap = context.lineJoin = "round";
+        context.rect(117, 60, 11, 1);
+        context.rect(138, 60, 7, 1);
+        context.rect(155, 60, 97, 1);
+        context.stroke();
+
+        // CTA
+        context.beginPath();
+        context.shadowColor = context.fillStyle = red;
+        context.fillRect(583, 15, 130, 60);
+        context.fillRect(583, 15, 130, 60);
+        context.fillRect(583, 15, 130, 60);
+
+        context.shadowColor = context.fillStyle = white;
+        context.font = "bold 20px Helvetica, sans-serif";
+        context.fillText("BUY NOW", 600, 53);
+
+        // Logo
+        context.beginPath();
+        context.fillStyle = red;
+        context.shadowColor = context.strokeStyle = white;
+        context.lineWidth = 4;
+        context.arc(45, 45, 30, 0, 2 * Math.PI, false);
+        context.fill();
+        context.stroke();
+        context.stroke();
+        context.stroke();
+
+        context.beginPath();
+        context.shadowColor = "none";
+        context.fillStyle = red;
+        context.arc(45, 45, 28, 0, 2 * Math.PI, false);
+        context.fill();
+        context.clip();
+        context.beginPath();
+        context.shadowColor = "transparent";
+        context.strokeStyle = "#1f0c03";
+        context.moveTo(0, 60);
+        context.quadraticCurveTo(30, 35, 50, 65);
+        context.stroke();
+        context.globalCompositeOperation = "destination-out";
+        context.drawImage(face, 34, 16, 44, 60);
+        context.globalCompositeOperation = "source-over";
+
+        return canvas;
+    }());
+
 
     function renderFlesh (fleshbase) {
         document.documentElement.style.background = flesh3d.style.background = fleshbase;
@@ -649,6 +755,17 @@
         // Draw flesh base
         fleshcontext.fillStyle = fleshbase;
         fleshcontext.fillRect(0, 0, w, h);
+
+        // Draw ad
+        var ad = {
+            width: w >= fleshad.width ? fleshad.width : (w - 250),
+            height: w >= fleshad.width ? fleshad.height : ((fleshad.height / fleshad.width) * (w - 250)),
+            left: w >= fleshad.width ? ((w - fleshad.width) / 2) : 125,
+            top: h / 4
+        };
+        fleshcontext.globalAlpha = 0.85;
+        fleshcontext.drawImage(fleshad, ad.left, ad.top, ad.width, ad.height);
+        fleshcontext.globalAlpha = 1.0;
 
         // Draw leather-like creases
         Voronoi.preparePattern(fleshbase);
