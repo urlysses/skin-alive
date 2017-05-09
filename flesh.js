@@ -2,13 +2,15 @@
 (function (twgl) {
     "use strict";
     var flesh = document.getElementById("flesh");
-    var fleshnormal = document.getElementById("fleshnormal");
+    var fleshnormal = document.createElement("canvas");
     var flesh3d = document.getElementById("flesh3d");
-    flesh.width = fleshnormal.width = flesh3d.width = window.innerWidth;
-    flesh.height = fleshnormal.height = flesh3d.height = window.innerHeight;
+    var user = document.createElement("canvas");
+    flesh.width = fleshnormal.width = flesh3d.width = user.width = window.innerWidth;
+    flesh.height = fleshnormal.height = flesh3d.height = user.height = window.innerHeight;
 
     var fleshcontext = flesh.getContext("2d");
     var normalcontext = fleshnormal.getContext("2d");
+    var usercontext = user.getContext("2d");
 
     var TO_RAD = Math.PI / 180;
     var w = flesh.width,
@@ -688,6 +690,12 @@
         context.fillRect(2, 2, canvas.width - 4, canvas.height - 4);
         context.fillRect(2, 2, canvas.width - 4, canvas.height - 4);
         context.fillRect(2, 2, canvas.width - 4, canvas.height - 4);
+        context.strokeStyle = red;
+        context.lineWidth = 8;
+        context.beginPath();
+        context.rect(0, 0, canvas.width, canvas.height);
+        context.closePath();
+        context.stroke();
 
         // Slogan
         context.beginPath();
@@ -735,7 +743,7 @@
         context.clip();
         context.beginPath();
         context.shadowColor = "transparent";
-        context.strokeStyle = "#1f0c03";
+        context.strokeStyle = "yellow";
         context.moveTo(0, 60);
         context.quadraticCurveTo(30, 35, 50, 65);
         context.stroke();
@@ -764,7 +772,7 @@
             top: h / 4
         };
         fleshcontext.globalAlpha = 0.85;
-        fleshcontext.drawImage(fleshad, ad.left, ad.top, ad.width, ad.height);
+        // fleshcontext.drawImage(fleshad, ad.left, ad.top, ad.width, ad.height);
         fleshcontext.globalAlpha = 1.0;
 
         // Draw leather-like creases
@@ -876,6 +884,13 @@
         //// Reset normalcontext
         normalcontext.globalAlpha = 1.0;
         normalcontext.globalCompositeOperation = "source-over";
+        normalcontext.shadowColor = "white";
+        normalcontext.shadowOffsetY = 20.0;
+        normalcontext.shadowBlur = 20.0;
+        normalcontext.drawImage(usercontext.canvas, 0, 0);
+        normalcontext.shadowColor = "blue";
+        normalcontext.shadowOffsetY = -20.0;
+        normalcontext.drawImage(usercontext.canvas, 0, 0);
         normalcontext.shadowColor = normalcontext.shadowOffsetY = normalcontext.shadowOffsetX = null;
     }
 
@@ -886,6 +901,7 @@
     var eye = v3.copy([0, 0, -bigger / 2]);
     var up = [0, 1, 0];
     var world;
+    var rendering = false;
     function renderFlesh3D () {
         gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
@@ -915,6 +931,7 @@
         twgl.setBuffersAndAttributes(gl, programInfo, plane);
         twgl.setUniforms(programInfo, uniforms);
         twgl.drawBufferInfo(gl, gl.TRIANGLES, plane);
+        rendering = false;
 
         // window.requestAnimationFrame(renderFlesh3D);
     }
@@ -929,11 +946,59 @@
     renderFlesh("#eebb99");
     prepareFlesh3D();
 
+    var lastpos;
+    function handleuser (e) {
+        if (rendering) {
+          return false;
+        }
+
+        rendering = true;
+        var pos = {
+            x: e.changedTouches ? e.changedTouches[0].clientX : e.clientX,
+            y: e.changedTouches ? e.changedTouches[0].clientY : e.clientY
+        };
+
+        if (!lastpos) {
+          lastpos = pos;
+        }
+
+        // slowly clear
+        usercontext.globalCompositeOperation = "destination-out";
+        usercontext.fillStyle = "rgba(0, 0, 0, 0.1)";
+        usercontext.fillRect(0, 0, w, h);
+
+        // draw lines
+        usercontext.globalCompositeOperation = "source-over";
+        usercontext.lineWidth = 10;
+        usercontext.lineJoin = 'round';
+        usercontext.lineCap = 'round';
+        usercontext.strokeStyle = "rgba(127, 127, 255, 0.9)";
+        usercontext.beginPath();
+        usercontext.moveTo(lastpos.x, lastpos.y);
+        usercontext.lineTo(pos.x, pos.y);
+        usercontext.closePath();
+        usercontext.stroke();
+
+        lastpos = pos;
+
+        window.requestAnimationFrame(prepareFlesh3D);
+        e.preventDefault();
+    }
+    window.addEventListener("mousemove", handleuser, false);
+    window.addEventListener("touchmove", handleuser, false);
+
     document.getElementById("menu").addEventListener("click", function (e) {
         var t = e.target || e.srcElement;
         if (t && t.nodeName.toLowerCase() === "span") {
             renderFlesh(t.getAttribute("data-color"));
             prepareFlesh3D();
         }
+    });
+
+    window.addEventListener("resize", function () {
+        w = flesh.width = fleshnormal.width = flesh3d.width = user.width = window.innerWidth;
+        h = flesh.height = fleshnormal.height = flesh3d.height = user.height = window.innerHeight;
+        renderFlesh("#eebb99");
+        window.requestAnimationFrame(prepareFlesh3D);
     });
 }(window.twgl));

@@ -2,6 +2,7 @@
 <html>
     <head>
         <meta charset="utf-8">
+        <meta name="viewport" content="user-scalable=no, width=device-width, maximum-scale=1, initial-scale=1">
         <title>
 🏻
 🏼
@@ -14,7 +15,6 @@
     </head>
     <body>
         <canvas id="flesh"></canvas>
-        <canvas id="fleshnormal" style="display: none;"></canvas>
         <canvas id="flesh3d" style="top: 0%;"></canvas>
         <div id="menu">
             <span data-color="#f9dcbe">🏻</span>
@@ -22,6 +22,23 @@
             <span data-color="#be8f6b">🏽</span>
             <span data-color="#9a6440">🏾</span>
             <span data-color="#58453a">🏿</span>
+        </div>
+        <div id="about">
+          <p>
+            This is a WebGL project in which a texture resembling human flesh is generated dynamically in the browser.
+          </p>
+          <p>
+            All of the human skin WebGL demos I have seen rely on pre-existing skin textures. Here I attempt to reproduce these textures on the fly.
+          </p>
+          <p>
+            The skin crackling is created using voronoi tesselation. The veins are lichtenberg figures. The freckles are just randomly distrubuted orbs. And the skin hue variation is caused by perlin noise.
+          </p>
+          <p>
+            Because each layer of the skin texture is created dynamically, it's possible to generate normal maps on the fly as well, which I guess is cool.
+          </p>
+          <p>
+            Feel free to check out the source files for links to recommended reading.
+          </p>
         </div>
         <script id="vshader" type="text/vertex-shader">
             uniform mat4 u_worldViewProjection;
