@@ -21,4 +21,14 @@ canvas {
     cursor: pointer;
     -webkit-user-select: none;
     user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+#about {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 10px;
+  height: 10px;
+  cursor: pointer;
 }

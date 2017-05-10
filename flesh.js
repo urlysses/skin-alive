@@ -63,7 +63,7 @@
         u_bumpmap: bumpmap
     };
     var skin = {
-        translation: [0, 0, 0],
+        translation: [0, 0, h / 2],
         uniforms: uniforms
     };
 
@@ -766,14 +766,18 @@
 
         // Draw ad
         var ad = {
-            width: w >= fleshad.width ? fleshad.width : (w - 250),
-            height: w >= fleshad.width ? fleshad.height : ((fleshad.height / fleshad.width) * (w - 250)),
-            left: w >= fleshad.width ? ((w - fleshad.width) / 2) : 125,
+            width: w >= fleshad.width ? fleshad.width : (w - 40),
+            height: w >= fleshad.width ? fleshad.height : ((fleshad.height / fleshad.width) * (w - 40)),
+            left: w >= fleshad.width ? ((w - fleshad.width) / 2) : 20,
             top: h / 4
         };
+        ad.top = h - ad.height - 20;
         fleshcontext.globalAlpha = 0.85;
-        // fleshcontext.drawImage(fleshad, ad.left, ad.top, ad.width, ad.height);
+        fleshcontext.drawImage(fleshad, ad.left, ad.top, ad.width, ad.height);
         fleshcontext.globalAlpha = 1.0;
+        fleshcontext.fillStyle = "black";
+        fleshcontext.font = "normal 13px Helvetica, sans-serif";
+        fleshcontext.fillText("A message from our sponsors:", ad.left, ad.top - 5);
 
         // Draw leather-like creases
         Voronoi.preparePattern(fleshbase);
@@ -895,10 +899,10 @@
     }
 
 
-    var fov = Math.min(1, (smaller / bigger) * 100 * TO_RAD);
-    var projection = m4.perspective(fov, w / h, 0.5, bigger + 1);
+    var fov = (smaller / bigger) * 100 * TO_RAD;
+    var projection = m4.perspective(90 * TO_RAD, w / h, 0.5, bigger + 1);
     var target = v3.copy([0, 0, 0]);
-    var eye = v3.copy([0, 0, -bigger / 2]);
+    var eye = v3.copy([0, 0, -1]);
     var up = [0, 1, 0];
     var world;
     var rendering = false;
@@ -993,12 +997,5 @@
             renderFlesh(t.getAttribute("data-color"));
             prepareFlesh3D();
         }
-    });
-
-    window.addEventListener("resize", function () {
-        w = flesh.width = fleshnormal.width = flesh3d.width = user.width = window.innerWidth;
-        h = flesh.height = fleshnormal.height = flesh3d.height = user.height = window.innerHeight;
-        renderFlesh("#eebb99");
-        window.requestAnimationFrame(prepareFlesh3D);
     });
 }(window.twgl));
