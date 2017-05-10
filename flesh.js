@@ -40,7 +40,6 @@
     var m4 = twgl.m4;
     var v3 = twgl.v3;
     var bigger = w > h ? w : h;
-    var smaller = w > h ? h : w;
     var lightWorldPosition = [0, h / 2, -bigger];
     var lightColor = [1, 1, 1, 1];
     var camera = m4.identity();
@@ -899,7 +898,6 @@
     }
 
 
-    var fov = (smaller / bigger) * 100 * TO_RAD;
     var projection = m4.perspective(90 * TO_RAD, w / h, 0.5, bigger + 1);
     var target = v3.copy([0, 0, 0]);
     var eye = v3.copy([0, 0, -1]);
