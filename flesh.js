@@ -686,14 +686,14 @@
         context.beginPath();
         context.shadowBlur = 2;
         context.shadowBlur = 2.4;
-        context.shadowColor = context.fillStyle = canvas.bg;
+        context.fillStyle = canvas.bg;
         context.fillRect(2, 2, canvas.width - 4, canvas.height - 4);
         context.fillRect(2, 2, canvas.width - 4, canvas.height - 4);
         context.fillRect(2, 2, canvas.width - 4, canvas.height - 4);
-        context.strokeStyle = red;
-        context.lineWidth = 8;
+        context.shadowColor = context.strokeStyle = red;
+        context.lineWidth = 4;
         context.beginPath();
-        context.rect(0, 0, canvas.width, canvas.height);
+        context.rect(4, 4, canvas.width - 8, canvas.height - 8);
         context.closePath();
         context.stroke();
 

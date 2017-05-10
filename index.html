@@ -25,16 +25,25 @@
         </div>
         <div id="about">
           <p>
-            This is a WebGL project in which a texture resembling human flesh is generated dynamically in the browser.
+            Flesh. The final frontier.
           </p>
           <p>
-            All of the human skin WebGL demos I have seen rely on pre-existing skin textures. Here I attempt to reproduce these textures on the fly.
+            Flat design. Material design. What are these but impotent thrusts at that vague seducer, user interfacing? <em>Skin Alive!</em> brings being closer to machine. Redefine "touch device" with the flesh-first user experience.
+          </p>
+          <p>
+            --- ✂︎ ---
+          </p>
+          <p>
+            This texture resembling human skin is generated dynamically in the browser.
+          </p>
+          <p>
+            All of the humanoid WebGL demos I have seen online rely on pre-existing skin textures. Here I attempt to reproduce these textures on the fly.
           </p>
           <p>
             The skin crackling is created using voronoi tesselation. The veins are lichtenberg figures. The freckles are just randomly distrubuted orbs. And the skin hue variation is caused by perlin noise.
           </p>
           <p>
-            Because each layer of the skin texture is created dynamically, it's possible to generate normal maps on the fly as well, which I guess is cool.
+            Because each layer of the skin texture is created dynamically, it's possible to generate normal maps on the fly as well, which I guess is cool and useful for giving the UI a feeling of depth.
           </p>
           <p>
             Feel free to check out the source files for links to recommended reading.
@@ -116,5 +125,19 @@
             }
         </script>
         <script type="text/javascript" src="flesh.js"></script>
+        <script type="text/javascript">
+            (function () {
+                var about = document.getElementById("about");
+                about.onclick = function () {
+                    if (this.opened === true) {
+                        this.opened = false;
+                        this.className = this.className.replace(/ opened/g, "");
+                    } else {
+                        this.opened = true;
+                        this.className += " opened";
+                    }
+                };
+            }());
+        </script>
     </body>
 </html>
