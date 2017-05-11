@@ -113,7 +113,7 @@
 
 
                 vec3 binormal = cross(v_normal, v_tangent);
-                vec3 normal = normalTransform.x * v_tangent + normalTransform.y * binormal + normalTransform.z * v_normal;
+                vec3 normal = normalTransform.x * binormal + normalTransform.y * binormal + normalTransform.z * v_normal;
 
                 vec3 a_normal = normalize(normal);
                 vec3 surfaceToLight = normalize(v_surfaceToLight);

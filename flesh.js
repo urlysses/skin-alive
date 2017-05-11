@@ -5,18 +5,28 @@
     var fleshnormal = document.createElement("canvas");
     var flesh3d = document.getElementById("flesh3d");
     var user = document.createElement("canvas");
-    flesh.width = fleshnormal.width = flesh3d.width = user.width = window.innerWidth;
-    flesh.height = fleshnormal.height = flesh3d.height = user.height = window.innerHeight;
 
     var fleshcontext = flesh.getContext("2d");
     var normalcontext = fleshnormal.getContext("2d");
     var usercontext = user.getContext("2d");
 
+    var MAXDRAG = 15;
+    var drag = -MAXDRAG;
     var TO_RAD = Math.PI / 180;
-    var w = flesh.width,
-        h = flesh.height,
-        i = 0;
+    var i = 0;
 
+    var w = window.innerWidth,
+        h = window.innerHeight,
+        bigger = w > h ? w : h,
+        smaller = w > h ? h : w,
+        scale = 1.0;
+    if (smaller < 500) {
+        scale = 1.5;
+        w *= scale;
+        h *= scale;
+    }
+    flesh.width = fleshnormal.width = flesh3d.width = user.width = w;
+    flesh.height = fleshnormal.height = flesh3d.height = user.height = h;
 
     // 3D
     twgl.setDefaults({attribPrefix: "a_"});
@@ -39,7 +49,6 @@
 
     var m4 = twgl.m4;
     var v3 = twgl.v3;
-    var bigger = w > h ? w : h;
     var lightWorldPosition = [0, h / 2, -bigger];
     var lightColor = [1, 1, 1, 1];
     var camera = m4.identity();
@@ -230,7 +239,7 @@
     VeinSet.prototype.gatherVenuleLines = function (maxSubVisibility) {
         var vnls = [];
 
-        var cutoff = 0.00005;   // Lower shows more smaller bits.
+        var cutoff = 0.005;   // Lower shows more smaller bits.
         var emphasize = 1 / 5.8;   // Lower pulls everything towards bright.
 
         this.venules.forEach(function (ven) {
@@ -428,8 +437,8 @@
     // Voronoi
     function CellularGrouping () {
         var cellcanvas = document.createElement("canvas");
-        this.w = cellcanvas.width = Math.round(w / 3);
-        this.h = cellcanvas.height = Math.round(h / 3);
+        this.w = cellcanvas.width = scale * Math.round(w / 3);
+        this.h = cellcanvas.height = scale * Math.round(h / 3);
         this.context = cellcanvas.getContext("2d");
 
         var verts = [];
@@ -861,13 +870,7 @@
         // Leather
         normalcontext.globalAlpha = 0.6;
         normalcontext.fillStyle = normalcontext.createPattern(Voronoi.normal.canvas, "repeat");
-        // normalcontext.fillRect(0, 0, w, h);
-        normalcontext.fillRect(0, 0, w / 2, h);  // instead of filling a full rect of normal pattern,
-        normalcontext.save();                    // which gets weaker as it approaches the right,
-        normalcontext.scale(-1, 1);              // we fill the left half with strong normal,
-        normalcontext.translate(-w / 2, 0);      // then we fill the right half with flipped normal
-        normalcontext.fillRect(0, 0, -w / 2, h); // so that we can get the same(-ish) lighting there.
-        normalcontext.restore();                 // A similar lhs/rhs thing is done for veins below.
+        normalcontext.fillRect(0, 0, w, h);
 
         // Veins
         normalcontext.globalAlpha = 0.7;
@@ -876,9 +879,7 @@
         normalcontext.shadowColor = "rgba(255, 127, 255, 1)";
         normalcontext.shadowOffsetX = 0.0;
         normalcontext.shadowOffsetY = -2.0;
-        normalcontext.drawImage(veins.context.canvas, 0, 0, w / 2, h, 0, 0, w / 2, h);
-        normalcontext.shadowOffsetY = 2.0;
-        normalcontext.drawImage(veins.context.canvas, w / 2, 0, w / 2, h, w / 2, 0, w / 2, h);
+        normalcontext.drawImage(veins.context.canvas, 0, 0);
         normalcontext.shadowColor = "rgba(127, 255, 127, 1)";
         normalcontext.shadowOffsetX = 1.0;
         normalcontext.shadowOffsetY = 4.0;
@@ -887,12 +888,14 @@
         //// Reset normalcontext
         normalcontext.globalAlpha = 1.0;
         normalcontext.globalCompositeOperation = "source-over";
-        normalcontext.shadowColor = "white";
-        normalcontext.shadowOffsetY = 20.0;
-        normalcontext.shadowBlur = 20.0;
+
+        // Draw user cursor
+        normalcontext.shadowColor = "rgba(255, 127, 255, 1)";
+        normalcontext.shadowOffsetY = drag / 2;
+        normalcontext.shadowBlur = MAXDRAG;
         normalcontext.drawImage(usercontext.canvas, 0, 0);
         normalcontext.shadowColor = "blue";
-        normalcontext.shadowOffsetY = -20.0;
+        normalcontext.shadowOffsetY *= -1;
         normalcontext.drawImage(usercontext.canvas, 0, 0);
         normalcontext.shadowColor = normalcontext.shadowOffsetY = normalcontext.shadowOffsetX = null;
     }
@@ -948,16 +951,24 @@
     renderFlesh("#eebb99");
     prepareFlesh3D();
 
+    var dragging = false;
     var lastpos;
-    function handleuser (e) {
+    function handleuserstart (e) {
+        dragging = true;
+        var t = e.target || e.srcElement;
+        if (t.nodeName.toLowerCase() === "canvas") {
+            e.preventDefault();
+        }
+    }
+    function handleusermove (e) {
         if (rendering) {
           return false;
         }
 
         rendering = true;
         var pos = {
-            x: e.changedTouches ? e.changedTouches[0].clientX : e.clientX,
-            y: e.changedTouches ? e.changedTouches[0].clientY : e.clientY
+            x: scale * (e.changedTouches ? e.changedTouches[0].clientX : e.clientX),
+            y: scale * (e.changedTouches ? e.changedTouches[0].clientY : e.clientY)
         };
 
         if (!lastpos) {
@@ -966,28 +977,47 @@
 
         // slowly clear
         usercontext.globalCompositeOperation = "destination-out";
-        usercontext.fillStyle = "rgba(0, 0, 0, 0.1)";
+        usercontext.fillStyle = "rgba(0, 0, 0, 0.2)";
         usercontext.fillRect(0, 0, w, h);
 
         // draw lines
         usercontext.globalCompositeOperation = "source-over";
-        usercontext.lineWidth = 10;
+        usercontext.lineWidth = MAXDRAG;
         usercontext.lineJoin = 'round';
         usercontext.lineCap = 'round';
-        usercontext.strokeStyle = "rgba(127, 127, 255, 0.9)";
+        usercontext.strokeStyle = "rgba(127, 127, 255, 1)";
         usercontext.beginPath();
         usercontext.moveTo(lastpos.x, lastpos.y);
         usercontext.lineTo(pos.x, pos.y);
         usercontext.closePath();
         usercontext.stroke();
 
+        if (dragging && drag < MAXDRAG) {
+            drag = Math.min(MAXDRAG, drag + 4);
+        }
+
+        if (!dragging && drag > -MAXDRAG) {
+            drag = Math.max(-MAXDRAG, drag - 4);
+        }
+
         lastpos = pos;
 
         window.requestAnimationFrame(prepareFlesh3D);
         e.preventDefault();
     }
-    window.addEventListener("mousemove", handleuser, false);
-    window.addEventListener("touchmove", handleuser, false);
+    function handleuserend (e) {
+        dragging = false;
+        var t = e.target || e.srcElement;
+        if (t.nodeName.toLowerCase() === "canvas") {
+            e.preventDefault();
+        }
+    }
+    window.addEventListener("mousedown", handleuserstart, false);
+    window.addEventListener("touchstart", handleuserstart, false);
+    window.addEventListener("mousemove", handleusermove, false);
+    window.addEventListener("touchmove", handleusermove, false);
+    window.addEventListener("mouseup", handleuserend, false);
+    window.addEventListener("touchend", handleuserend, false);
 
     document.getElementById("menu").addEventListener("click", function (e) {
         var t = e.target || e.srcElement;
