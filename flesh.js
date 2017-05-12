@@ -956,6 +956,24 @@
     renderFlesh("#eebb99");
     prepareFlesh3D();
 
+    var fading = false;
+    var fadeiter = 0;
+    function fadeuser () {
+        // slowly clear the user's trail.
+        usercontext.globalCompositeOperation = "destination-out";
+        usercontext.fillStyle = "rgba(0, 0, 0, 0.2)";
+        usercontext.fillRect(0, 0, w, h);
+        fadeiter += 1;
+        if (fadeiter <= 10) {
+            // Should take about 10 frames to clear the trail.
+            window.requestAnimationFrame(fadeuser);
+        } else {
+            fading = false;
+            fadeiter = 0;
+        }
+        window.requestAnimationFrame(prepareFlesh3D);
+    }
+
     var dragging = false;
     var lastpos;
     function handleuserstart (e) {
@@ -980,11 +998,6 @@
           lastpos = pos;
         }
 
-        // slowly clear
-        usercontext.globalCompositeOperation = "destination-out";
-        usercontext.fillStyle = "rgba(0, 0, 0, 0.2)";
-        usercontext.fillRect(0, 0, w, h);
-
         // draw lines
         usercontext.globalCompositeOperation = "source-over";
         usercontext.lineWidth = MAXDRAG;
@@ -1007,7 +1020,12 @@
 
         lastpos = pos;
 
-        window.requestAnimationFrame(prepareFlesh3D);
+        if (!fading) {
+            fading = true;
+            window.requestAnimationFrame(fadeuser);
+        } else {
+            fadeiter = 0;
+        }
         e.preventDefault();
     }
     function handleuserend (e) {
