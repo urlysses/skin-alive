@@ -1030,6 +1030,7 @@
     }
     function handleuserend (e) {
         dragging = false;
+        lastpos = null; // Reset lastpos to prevent jump-lines on mobile.
         var t = e.target || e.srcElement;
         if (t.nodeName.toLowerCase() === "canvas") {
             e.preventDefault();
