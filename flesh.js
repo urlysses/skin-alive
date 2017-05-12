@@ -129,8 +129,8 @@
         this.venlines = this.gatherVenuleLines(maxSubVisibility);
         this.context.clearRect(0, 0, w, h);
 
-        this.drawVenuleLines(24, 75, 102, 0.2, 4);
-        this.drawVenuleLines(24, 75, 102, 1, 1.3);
+        this.drawVenuleLines(24, 55, 102, 0.2, 4);
+        this.drawVenuleLines(24, 55, 102, 1, 1.3);
     }
     VeinSet.prototype.addVenules = function (xPosOffset, yPosOffset, xCount, yCount, spacing) {
         var halfspacing = spacing / 2;
@@ -764,6 +764,8 @@
 
 
     function renderFlesh (fleshbase) {
+        var colorvalue = Number("0x" + fleshbase.slice(1));
+        var huev = colorvalue / Number("0xFFFFFF");
         document.documentElement.style.background = flesh3d.style.background = fleshbase;
 
         fleshcontext.clearRect(0, 0, w, h);
@@ -827,7 +829,10 @@
 
 
         // Draw veins
-        fleshcontext.globalAlpha = 0.3;
+        fleshcontext.globalAlpha = huev * 0.11;
+        fleshcontext.globalCompositeOperation = "hard-light";
+        fleshcontext.drawImage(veins.context.canvas, 0, 0);
+        fleshcontext.globalAlpha = (1 - huev) * 0.3;
         fleshcontext.globalCompositeOperation = "overlay";
         fleshcontext.drawImage(veins.context.canvas, 0, 0);
         fleshcontext.globalAlpha = 1.0;
